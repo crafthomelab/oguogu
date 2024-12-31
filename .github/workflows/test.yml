@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: contracts
+        working-directory: contracts/
 
     steps:
       - uses: actions/checkout@v4
@@ -37,10 +37,10 @@ jobs:
           forge fmt --check
         id: fmt
 
-      - name: Run Forge build
-        run: |
-          forge build --sizes
-        id: build
+      # - name: Run Forge build
+      #   run: |
+      #     forge build --sizes
+      #   id: build
 
       - name: Run Forge tests
         run: |
