@@ -151,7 +151,7 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
          */
         require(_challenges[tokenId].receipent != address(0), "Invalid challenge");
         require(getChallengeStatus(tokenId) == ChallengeStatus.OPEN, "challenge is completed");
-        require(verifySignature(_challenges[tokenId].receipent, proofHash, proofSignature), "Invalid signature");
+        require(verifySignature(ownerOf(tokenId), proofHash, proofSignature), "Invalid signature");
 
         for (uint256 i = 0; i < _challenges[tokenId].proofHashes.length; i++) {
             if (_challenges[tokenId].proofHashes[i] == proofHash) {
@@ -162,6 +162,7 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
         _challenges[tokenId].proofHashes.push(proofHash);
 
         emit SubmitProof(tokenId, proofHash);
+        emit MetadataUpdate(tokenId);
     }
 
     function completeChallenge(uint256 tokenId) external {
@@ -175,16 +176,17 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
         Challenge memory challenge = _challenges[tokenId];
         require(status != ChallengeStatus.OPEN, "Challenge is not closed");
         require(!challenge.isClosed, "Challenge is already closed");
+        address challenger = ownerOf(tokenId);
 
         _challenges[tokenId].isClosed = true;
-        userAllocatedRewards[challenge.receipent] -= challenge.reward;
+        userAllocatedRewards[challenger] -= challenge.reward;
         emit ChallengeCompleted(tokenId, status);
         emit MetadataUpdate(tokenId);
 
         if (status == ChallengeStatus.SUCCESS) {
             // 챌린지 성공 시, 보상을 지급합니다.
             rewardToken.transfer(challenge.receipent, challenge.reward);
-            userReserves[challenge.receipent] -= challenge.reward;
+            userReserves[challenger] -= challenge.reward;
         }
     }
 

@@ -110,4 +110,89 @@ contract OGUOGUTest is Test {
         oguogu.submitProof(challengeId, proofHash, proofSignature);
         vm.stopPrank();
     }
+
+    function test_block_double_submitProof() public {
+        vm.startPrank(user0);
+        testUSDT.approve(address(oguogu), 10e6);
+        oguogu.depositReward(address(user0), 10e6);
+
+        uint256 challengeId = oguogu.createChallenge(10e6, bytes32(uint256(123)), block.timestamp + 1 days, 2, user0);
+
+        vm.stopPrank();
+
+        bytes32 proofHash = bytes32(uint256(12223));
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(0x2, proofHash.toEthSignedMessageHash());
+        bytes memory proofSignature = abi.encodePacked(r, s, v);
+
+        vm.startPrank(operator);
+        oguogu.submitProof(challengeId, proofHash, proofSignature);
+        vm.expectRevert("Proof already submitted");
+        oguogu.submitProof(challengeId, proofHash, proofSignature);
+        vm.stopPrank();
+    }
+    
+    function test_block_submitProof_after_duedate() public {
+        vm.startPrank(user0);
+        testUSDT.approve(address(oguogu), 10e6);
+        oguogu.depositReward(address(user0), 10e6);
+
+        uint256 challengeId = oguogu.createChallenge(10e6, bytes32(uint256(123)), block.timestamp + 1 days, 2, user0);
+
+        vm.stopPrank();
+        vm.warp(block.timestamp + 1 days + 1 seconds);
+
+        bytes32 proofHash = bytes32(uint256(12223));
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(0x2, proofHash.toEthSignedMessageHash());
+        bytes memory proofSignature = abi.encodePacked(r, s, v);
+
+        vm.startPrank(operator);
+        vm.expectRevert("challenge is completed");
+        oguogu.submitProof(challengeId, proofHash, proofSignature);
+        vm.stopPrank();
+    }
+
+    function test_completeChallenge() public {
+        vm.startPrank(user0);
+        testUSDT.approve(address(oguogu), 10e6);
+        oguogu.depositReward(address(user0), 10e6);
+
+        uint256 challengeId = oguogu.createChallenge(10e6, bytes32(uint256(123)), block.timestamp + 1 days, 1, user1);
+
+        vm.stopPrank();
+
+        bytes32 proofHash = bytes32(uint256(12223));
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(0x2, proofHash.toEthSignedMessageHash());
+        bytes memory proofSignature = abi.encodePacked(r, s, v);
+
+        vm.startPrank(operator);
+        oguogu.submitProof(challengeId, proofHash, proofSignature);
+        vm.stopPrank();
+
+        oguogu.completeChallenge(challengeId);
+
+        assertEq(testUSDT.balanceOf(user1), 10e6);
+    }
+
+    function test_block_double_completeChallenge() public {
+        vm.startPrank(user0);
+        testUSDT.approve(address(oguogu), 10e6);
+        oguogu.depositReward(address(user0), 10e6);
+
+        uint256 challengeId = oguogu.createChallenge(10e6, bytes32(uint256(123)), block.timestamp + 1 days, 1, user1);
+
+        vm.stopPrank();
+
+        bytes32 proofHash = bytes32(uint256(12223));
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(0x2, proofHash.toEthSignedMessageHash());
+        bytes memory proofSignature = abi.encodePacked(r, s, v);
+
+        vm.startPrank(operator);
+        oguogu.submitProof(challengeId, proofHash, proofSignature);
+        vm.stopPrank();
+
+        oguogu.completeChallenge(challengeId);
+        
+        vm.expectRevert("Challenge is already closed");
+        oguogu.completeChallenge(challengeId);
+    }    
 }
