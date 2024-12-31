@@ -5,6 +5,9 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import "@openzeppelin/contracts/interfaces/IERC20.sol";
+import "@openzeppelin/contracts/interfaces/IERC4906.sol";
+import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
 /**
@@ -23,8 +26,10 @@ import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
  *
  * OGUOGU는 하루하루 작은 성취들을 쌓아나갈 수 있도록, 그리고 그것을 기록할 수 있도록 장려합니다.
  */
-contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable {
+contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
     using Strings for uint256;
+    using MessageHashUtils for bytes32;
+    using ECDSA for bytes32;
 
     IERC20 public rewardToken;
 
@@ -32,11 +37,11 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable {
     mapping(address => uint256) public userAllocatedRewards;
 
     uint256 private _challengeId;
-    mapping(uint256 => Challenge) public challenges;
+    mapping(uint256 => Challenge) private _challenges;
 
     struct Challenge {
         uint256 reward; // 리워드 금액
-        bytes32 tokenIdgeHash; // 챌린지 해시값(md5 해시값)
+        bytes32 challengeHash; // 챌린지 해시값(md5 해시값)
         uint256 dueDate; // 챌린지 종료 날짜
         uint64 minimumProofCount; // 최소 증명 갯수
         address receipent; // 챌린지 성공 후, 보상 받을 주소
@@ -94,29 +99,27 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable {
         bytes32 challengeHash,
         uint256 dueDate,
         uint64 minimumProofCount,
-        address challenger,
         address receipent
-    ) external {
+    ) external returns (uint256) {
         /**
          * 신규 챌린지를 생성합니다.
          * - 챌린지 별로 고유한 NFT를 발행합니다.
          * - 챌린지 생성자 혹은 owner만 챌린지를 생성할 수 있습니다.
          */
-        require(challenger == msg.sender || owner() == msg.sender, "Invalid challenger address");
         require(receipent != address(0), "Invalid receipent address");
         require(reward > 0, "Invalid reward");
         require(dueDate > block.timestamp, "Invalid due date");
         require(minimumProofCount > 0, "Invalid minimum proof count");
 
-        userAllocatedRewards[challenger] += reward;
-        require(userAllocatedRewards[challenger] <= userReserves[challenger], "Insufficient balance");
+        userAllocatedRewards[msg.sender] += reward;
+        require(userAllocatedRewards[msg.sender] <= userReserves[msg.sender], "Insufficient balance");
 
-        challenges[_challengeId] =
+        _challenges[_challengeId] =
             Challenge(reward, challengeHash, dueDate, minimumProofCount, receipent, new bytes32[](0), false);
 
-        _safeMint(challenger, _challengeId);
+        _safeMint(msg.sender, _challengeId);
         emit ChallengeCreated(_challengeId);
-        _challengeId++;
+        return _challengeId++;
     }
 
     function getChallengeStatus(uint256 tokenId) public view returns (ChallengeStatus) {
@@ -125,7 +128,7 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable {
          *
          * @param tokenId 챌린지 ID
          */
-        Challenge memory challenge = challenges[tokenId];
+        Challenge memory challenge = _challenges[tokenId];
 
         if (challenge.proofHashes.length >= challenge.minimumProofCount) {
             return ChallengeStatus.SUCCESS;
@@ -138,17 +141,25 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable {
         return ChallengeStatus.OPEN;
     }
 
-    function submitProof(uint256 tokenId, bytes32 proofHash) external onlyOwner {
+    function submitProof(uint256 tokenId, bytes32 proofHash, bytes memory proofSignature) external onlyOwner {
         /**
          * 챌린지 수행에 대한 증명자료를 제출합니다.
          *
          * @param tokenId 챌린지 ID
          * @param proofHash 증명 해시값
+         * @param proofSignature 증명에 대한 서명
          */
-        require(challenges[tokenId].receipent != address(0), "Invalid challenge");
+        require(_challenges[tokenId].receipent != address(0), "Invalid challenge");
         require(getChallengeStatus(tokenId) == ChallengeStatus.OPEN, "challenge is completed");
+        require(verifySignature(_challenges[tokenId].receipent, proofHash, proofSignature), "Invalid signature");
 
-        challenges[tokenId].proofHashes.push(proofHash);
+        for (uint256 i = 0; i < _challenges[tokenId].proofHashes.length; i++) {
+            if (_challenges[tokenId].proofHashes[i] == proofHash) {
+                revert("Proof already submitted");
+            }
+        }
+
+        _challenges[tokenId].proofHashes.push(proofHash);
 
         emit SubmitProof(tokenId, proofHash);
     }
@@ -161,18 +172,41 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable {
          * @param tokenId 챌린지 ID
          */
         ChallengeStatus status = getChallengeStatus(tokenId);
-        Challenge memory challenge = challenges[tokenId];
+        Challenge memory challenge = _challenges[tokenId];
         require(status != ChallengeStatus.OPEN, "Challenge is not closed");
         require(!challenge.isClosed, "Challenge is already closed");
 
-        challenges[tokenId].isClosed = true;
+        _challenges[tokenId].isClosed = true;
         userAllocatedRewards[challenge.receipent] -= challenge.reward;
         emit ChallengeCompleted(tokenId, status);
+        emit MetadataUpdate(tokenId);
 
         if (status == ChallengeStatus.SUCCESS) {
             // 챌린지 성공 시, 보상을 지급합니다.
             rewardToken.transfer(challenge.receipent, challenge.reward);
             userReserves[challenge.receipent] -= challenge.reward;
         }
+    }
+
+    function getChallenge(uint256 tokenId)
+        external
+        view
+        returns (uint256, bytes32, uint256, uint64, address, bytes32[] memory, bool)
+    {
+        Challenge memory challenge = _challenges[tokenId];
+        return (
+            challenge.reward,
+            challenge.challengeHash,
+            challenge.dueDate,
+            challenge.minimumProofCount,
+            challenge.receipent,
+            challenge.proofHashes,
+            challenge.isClosed
+        );
+    }
+
+    function verifySignature(address _signer, bytes32 hash, bytes memory signature) internal pure returns (bool) {
+        bytes32 signedHash = hash.toEthSignedMessageHash();
+        return signedHash.recover(signature) == _signer;
     }
 }
