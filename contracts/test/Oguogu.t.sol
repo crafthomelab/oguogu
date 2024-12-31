@@ -130,7 +130,7 @@ contract OGUOGUTest is Test {
         oguogu.submitProof(challengeId, proofHash, proofSignature);
         vm.stopPrank();
     }
-    
+
     function test_block_submitProof_after_duedate() public {
         vm.startPrank(user0);
         testUSDT.approve(address(oguogu), 10e6);
@@ -191,8 +191,8 @@ contract OGUOGUTest is Test {
         vm.stopPrank();
 
         oguogu.completeChallenge(challengeId);
-        
+
         vm.expectRevert("Challenge is already closed");
         oguogu.completeChallenge(challengeId);
-    }    
+    }
 }
