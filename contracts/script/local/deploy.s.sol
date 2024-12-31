@@ -18,7 +18,7 @@ contract DeployScript is Script {
         uint256 userPrivateKey = 0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d;
         address deployer = vm.addr(deployerPrivateKey);
         address user = vm.addr(userPrivateKey);
-        
+
         vm.startBroadcast(deployerPrivateKey);
         testUSDT = new TestUSDT();
 
@@ -27,11 +27,7 @@ contract DeployScript is Script {
 
         oguogu = new OGUOGU();
 
-        bytes memory data = abi.encodeWithSignature(
-            "initialize(address,address)", 
-            address(testUSDT), 
-            address(deployer)
-        );
+        bytes memory data = abi.encodeWithSignature("initialize(address,address)", address(testUSDT), address(deployer));
         ERC1967Proxy proxy = new ERC1967Proxy(address(oguogu), data);
 
         oguogu = OGUOGU(address(proxy));
