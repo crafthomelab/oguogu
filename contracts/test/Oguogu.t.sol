@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 
 import {Test, console} from "forge-std/Test.sol";
 import {TestUSDT} from "src/misc/TestToken.sol";
-import {OGUOGU} from "src/OGUOGU.sol";
+import {OGUOGU} from "src/Oguogu.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 contract OGUOGUTest is Test {
