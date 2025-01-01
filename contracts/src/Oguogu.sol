@@ -171,13 +171,8 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
         }
 
         _challenges[tokenId].proofHashes.push(proofHash);
+
         emit SubmitProof(tokenId, ownerOf(tokenId), proofHash);
-
-        ChallengeStatus status = getChallengeStatus(tokenId);
-        if (status != ChallengeStatus.OPEN) {
-            _completeChallenge(tokenId, status, _challenges[tokenId]);
-        }
-
         emit MetadataUpdate(tokenId);
     }
 
@@ -193,21 +188,18 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
         require(status != ChallengeStatus.OPEN, "Challenge is not closed");
         require(!challenge.isClosed, "Challenge is already closed");
 
-        _completeChallenge(tokenId, status, challenge);
-
-        emit MetadataUpdate(tokenId);
-    }
-
-    function _completeChallenge(uint256 tokenId, ChallengeStatus status, Challenge memory challenge) internal {
         address challenger = ownerOf(tokenId);
         _challenges[tokenId].isClosed = true;
         userAllocatedRewards[challenger] -= challenge.reward;
+
         if (status == ChallengeStatus.SUCCESS) {
             // 챌린지 성공 시, 보상을 지급합니다.
             rewardToken.transfer(challenge.receipent, challenge.reward);
             userReserves[challenger] -= challenge.reward;
         }
+
         emit ChallengeCompleted(tokenId, challenger, status);
+        emit MetadataUpdate(tokenId);
     }
 
     function getChallenge(uint256 tokenId)
