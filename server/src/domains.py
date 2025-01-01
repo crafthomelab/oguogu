@@ -5,7 +5,7 @@ import pytz
 from web3 import Web3
 from enum import Enum
 
-from server.src.utils import create_hash
+from src.utils import create_hash
 
 
 @dataclass

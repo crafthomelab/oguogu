@@ -5,12 +5,16 @@ from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.ext.asyncio import AsyncAttrs
 from sqlalchemy.orm import DeclarativeBase
 
-from server.src.domains import Challenge, ChallengeProof, ChallengeStatus
+from src.domains import Challenge, ChallengeProof, ChallengeStatus
 
 
 from sqlalchemy.orm import relationship, backref
 
-class ChallengeEntity(AsyncAttrs, DeclarativeBase):
+class Base(AsyncAttrs, DeclarativeBase):
+    pass
+
+
+class ChallengeEntity(Base):
     __tablename__ = "challenges"
 
     challenge_hash: Mapped[str] = mapped_column(String, primary_key=True)
@@ -76,7 +80,7 @@ class ChallengeEntity(AsyncAttrs, DeclarativeBase):
         )
 
 
-class ChallengeProofEntity(AsyncAttrs, DeclarativeBase):
+class ChallengeProofEntity(Base):
     __tablename__ = "challenge_proofs"
 
     proof_hash: Mapped[str] = mapped_column(String, primary_key=True)

@@ -1,8 +1,8 @@
 from pydantic_settings import BaseSettings
 from pydantic import Field
 
-class DataServerSettings(BaseSettings):
-    """Data Server를 위한 환경 변수 목록들"""
+class Settings(BaseSettings):
+    """환경 변수 목록들 """
     DB_HOST: str = Field(
         default="oguogu-database",
         description="db host name",
@@ -26,6 +26,11 @@ class DataServerSettings(BaseSettings):
     DB_PASSWORD: str = Field(
         default="admin123",
         description="디비 패스워드 이름"
+    )
+    
+    WEB3_PROVIDER_URL: str = Field(
+        default="http://localhost:8545",
+        description="web3 provider url",
     )
     
     OPERATOR_PRIVATE_KEY: str = Field(
