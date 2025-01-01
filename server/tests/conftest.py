@@ -2,10 +2,12 @@ import pytest
 from eth_account import Account
 
 from src.database.container import DataBaseContainer
+from src.database.database import SessionManager
 from src.database.entity import Base
 from src.settings import Settings
 
 from testcontainers.postgres import PostgresContainer
+
 
 @pytest.fixture(scope="session")
 def oguogu_mnemonic():
@@ -47,16 +49,24 @@ def local_settings(postgres_container: PostgresContainer):
         DB_USER=postgres_container.username,
         DB_PASSWORD=postgres_container.password
     )
-    
-@pytest.fixture(scope="session")
-async def local_database_container(local_settings: Settings):
-    container = DataBaseContainer(settings=local_settings)
-    session_manager = container.session_manager()
+
+
+@pytest.fixture(scope='session')
+async def local_session_manager(local_settings: Settings):
+    session_manager = SessionManager(settings=local_settings)
 
     async with session_manager.connect() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
-    yield container
+    yield session_manager
 
     async with session_manager.connect() as conn:
         await conn.run_sync(Base.metadata.drop_all)
+
+
+    
+@pytest.fixture(scope='session')
+async def local_database_container(local_session_manager: SessionManager):
+    container = DataBaseContainer(settings=local_settings)
+    container.session_manager.override(local_session_manager)
+    yield container

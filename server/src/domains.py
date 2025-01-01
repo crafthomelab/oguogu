@@ -11,7 +11,7 @@ from src.utils import create_hash
 @dataclass
 class Challenge:
     """ Challenge 도메인 """
-    challenge_hash: bytes
+    challenge_hash: str
     challenge_id: Optional[int]
     status: "ChallengeStatus"
     
@@ -74,7 +74,8 @@ class Challenge:
         )
         
         return Challenge(
-            challenge_hash=challenge_hash,
+            challenge_id=None,
+            challenge_hash=challenge_hash.hex(),
             status=ChallengeStatus.INIT,
             challenger_address=challenger_address,
             reward_amount=reward_amount,
@@ -107,9 +108,24 @@ class Challenge:
         return len(self.proofs) >= self.minimum_proof_count        
         
     def success(self):
+        if len(self.proofs) < self.minimum_proof_count:
+            raise ValueError("Proof count is less than minimum proof count")
+        
+        if self.status != ChallengeStatus.OPEN:
+            raise ValueError("only allow open challenge")
+        
         self.status = ChallengeStatus.SUCCESS
 
     def fail(self):
+        if len(self.proofs) >= self.minimum_proof_count:
+            raise ValueError("Proof count is greater than minimum proof count")
+        
+        if self.end_date >= datetime.now(pytz.utc):
+            raise ValueError("Challenge is not ended")
+        
+        if self.status != ChallengeStatus.OPEN:
+            raise ValueError("only allow open challenge")
+        
         self.status = ChallengeStatus.FAILED
 
 
@@ -131,6 +147,6 @@ class ChallengeProof:
     def new(content: Dict[str, any]) -> "ChallengeProof":
         proof_hash = create_hash(**content)
         return ChallengeProof(
-            proof_hash=proof_hash, 
+            proof_hash=proof_hash.hex(), 
             content=content
         )
