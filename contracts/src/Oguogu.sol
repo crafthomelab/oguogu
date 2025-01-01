@@ -57,9 +57,9 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
     }
 
     event DepositReward(address indexed challenger, uint256 amount);
-    event SubmitProof(uint256 indexed tokenId, bytes32 proofHash);
-    event ChallengeCreated(uint256 indexed tokenId);
-    event ChallengeCompleted(uint256 indexed tokenId, ChallengeStatus status);
+    event SubmitProof(uint256 indexed tokenId, address indexed challenger, bytes32 proofHash);
+    event ChallengeCreated(uint256 indexed tokenId, address indexed challenger);
+    event ChallengeCompleted(uint256 indexed tokenId, address indexed challenger, ChallengeStatus status);
 
     function initialize(address _rewardToken, address _operator) public initializer {
         require(_rewardToken != address(0), "Invalid token address");
@@ -129,7 +129,7 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
             Challenge(reward, challengeHash, dueDate, minimumProofCount, receipent, new bytes32[](0), false);
 
         _safeMint(msg.sender, _challengeId);
-        emit ChallengeCreated(_challengeId);
+        emit ChallengeCreated(_challengeId, msg.sender);
         return _challengeId++;
     }
 
@@ -172,7 +172,7 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
 
         _challenges[tokenId].proofHashes.push(proofHash);
 
-        emit SubmitProof(tokenId, proofHash);
+        emit SubmitProof(tokenId, ownerOf(tokenId), proofHash);
         emit MetadataUpdate(tokenId);
     }
 
@@ -191,7 +191,7 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
 
         _challenges[tokenId].isClosed = true;
         userAllocatedRewards[challenger] -= challenge.reward;
-        emit ChallengeCompleted(tokenId, status);
+        emit ChallengeCompleted(tokenId, challenger, status);
         emit MetadataUpdate(tokenId);
 
         if (status == ChallengeStatus.SUCCESS) {
