@@ -2,7 +2,7 @@
 
 from eth_account import Account
 
-from src.contracts.utils import create_hash, create_signature, verify_hash, verify_signature
+from src.utils import create_hash, create_signature, verify_hash, verify_signature
 
 
 def test_create_and_verify_hash(user0_account: Account):
