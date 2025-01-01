@@ -19,7 +19,9 @@ contract DeployScript is Script {
         vm.startBroadcast(deployerPrivateKey);
         oguogu = new OGUOGU();
 
+        // 초기화 데이터 준비
         bytes memory data = abi.encodeWithSignature("initialize(address,address)", usdt, address(deployer));
+
         ERC1967Proxy proxy = new ERC1967Proxy(address(oguogu), data);
         oguogu = OGUOGU(address(proxy));
 

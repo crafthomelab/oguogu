@@ -55,7 +55,10 @@ contract OGUOGUTest is Test {
         testUSDT.approve(address(oguogu), 10e6);
         oguogu.depositReward(address(user0), 10e6);
 
-        uint256 challengeId = oguogu.createChallenge(10e6, bytes32(uint256(123)), block.timestamp + 1 days, 10, user0);
+        bytes32 chHash = bytes32(uint256(123));
+        bytes memory challengeSignature = generateSignature(0x1, chHash);
+        uint256 challengeId =
+            oguogu.createChallenge(10e6, chHash, challengeSignature, block.timestamp + 1 days, 10, user0);
 
         vm.stopPrank();
 
@@ -90,7 +93,10 @@ contract OGUOGUTest is Test {
         oguogu.depositReward(address(user0), 10e6);
 
         vm.expectRevert("Invalid due date");
-        oguogu.createChallenge(10e6, bytes32(uint256(123)), block.timestamp - 1 days, 10, user0);
+        bytes32 chHash = bytes32(uint256(123));
+        bytes memory challengeSignature = generateSignature(0x1, chHash);
+        uint256 challengeId =
+            oguogu.createChallenge(10e6, chHash, challengeSignature, block.timestamp - 1 days, 10, user0);
     }
 
     function test_submitProof() public {
@@ -98,7 +104,10 @@ contract OGUOGUTest is Test {
         testUSDT.approve(address(oguogu), 10e6);
         oguogu.depositReward(address(user0), 10e6);
 
-        uint256 challengeId = oguogu.createChallenge(10e6, bytes32(uint256(123)), block.timestamp + 1 days, 1, user0);
+        bytes32 chHash = bytes32(uint256(123));
+        bytes memory challengeSignature = generateSignature(0x1, chHash);
+        uint256 challengeId =
+            oguogu.createChallenge(10e6, chHash, challengeSignature, block.timestamp + 1 days, 10, user0);
 
         vm.stopPrank();
 
@@ -107,7 +116,7 @@ contract OGUOGUTest is Test {
         bytes memory proofSignature = abi.encodePacked(r, s, v);
 
         vm.startPrank(operator);
-        oguogu.submitProof(challengeId, proofHash, proofSignature);
+        oguogu.submitProof(1, proofHash, proofSignature);
         vm.stopPrank();
     }
 
@@ -116,7 +125,10 @@ contract OGUOGUTest is Test {
         testUSDT.approve(address(oguogu), 10e6);
         oguogu.depositReward(address(user0), 10e6);
 
-        uint256 challengeId = oguogu.createChallenge(10e6, bytes32(uint256(123)), block.timestamp + 1 days, 2, user0);
+        bytes32 chHash = bytes32(uint256(123));
+        bytes memory challengeSignature = generateSignature(0x1, chHash);
+        uint256 challengeId =
+            oguogu.createChallenge(10e6, chHash, challengeSignature, block.timestamp + 1 days, 10, user0);
 
         vm.stopPrank();
 
@@ -136,7 +148,10 @@ contract OGUOGUTest is Test {
         testUSDT.approve(address(oguogu), 10e6);
         oguogu.depositReward(address(user0), 10e6);
 
-        uint256 challengeId = oguogu.createChallenge(10e6, bytes32(uint256(123)), block.timestamp + 1 days, 2, user0);
+        bytes32 chHash = bytes32(uint256(123));
+        bytes memory challengeSignature = generateSignature(0x1, chHash);
+        uint256 challengeId =
+            oguogu.createChallenge(10e6, chHash, challengeSignature, block.timestamp + 1 days, 10, user0);
 
         vm.stopPrank();
         vm.warp(block.timestamp + 1 days + 1 seconds);
@@ -156,7 +171,10 @@ contract OGUOGUTest is Test {
         testUSDT.approve(address(oguogu), 10e6);
         oguogu.depositReward(address(user0), 10e6);
 
-        uint256 challengeId = oguogu.createChallenge(10e6, bytes32(uint256(123)), block.timestamp + 1 days, 1, user1);
+        bytes32 chHash = bytes32(uint256(123));
+        bytes memory challengeSignature = generateSignature(0x1, chHash);
+        uint256 challengeId =
+            oguogu.createChallenge(10e6, chHash, challengeSignature, block.timestamp + 1 days, 1, user1);
 
         vm.stopPrank();
 
@@ -178,7 +196,10 @@ contract OGUOGUTest is Test {
         testUSDT.approve(address(oguogu), 10e6);
         oguogu.depositReward(address(user0), 10e6);
 
-        uint256 challengeId = oguogu.createChallenge(10e6, bytes32(uint256(123)), block.timestamp + 1 days, 1, user1);
+        bytes32 chHash = bytes32(uint256(123));
+        bytes memory challengeSignature = generateSignature(0x1, chHash);
+        uint256 challengeId =
+            oguogu.createChallenge(10e6, chHash, challengeSignature, block.timestamp + 1 days, 1, user1);
 
         vm.stopPrank();
 
@@ -194,5 +215,10 @@ contract OGUOGUTest is Test {
 
         vm.expectRevert("Challenge is already closed");
         oguogu.completeChallenge(challengeId);
+    }
+
+    function generateSignature(uint256 signer, bytes32 hash) private pure returns (bytes memory) {
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signer, hash.toEthSignedMessageHash());
+        return abi.encodePacked(r, s, v);
     }
 }

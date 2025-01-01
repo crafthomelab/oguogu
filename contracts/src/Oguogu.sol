@@ -97,6 +97,7 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
     function createChallenge(
         uint256 reward,
         bytes32 challengeHash,
+        bytes memory challengeSignature,
         uint256 dueDate,
         uint64 minimumProofCount,
         address receipent
@@ -110,6 +111,11 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
         require(reward > 0, "Invalid reward");
         require(dueDate > block.timestamp, "Invalid due date");
         require(minimumProofCount > 0, "Invalid minimum proof count");
+
+        // [OguOgu의 Signature가 필요한 이유]
+        //  챌린지를 검증하는 사람에게 challenge 정보를 제공한 이후에 challengeHash와 challengeSignature를 생성할 수 있기 때문에
+        //  챌린지 참여자가 OguOgu쪽으로 챌린지 정보를 제공했다는 것을 보장할 수 있다.
+        require(verifySignature(owner(), challengeHash, challengeSignature), "Invalid signature");
 
         userAllocatedRewards[msg.sender] += reward;
         require(userAllocatedRewards[msg.sender] <= userReserves[msg.sender], "Insufficient balance");
