@@ -38,6 +38,7 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
 
     uint256 private _challengeId;
     mapping(uint256 => Challenge) private _challenges;
+    mapping(bytes32 => address) public challengeHashes;
 
     struct Challenge {
         uint256 reward; // 리워드 금액
@@ -111,6 +112,10 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
         require(reward > 0, "Invalid reward");
         require(dueDate > block.timestamp, "Invalid due date");
         require(minimumProofCount > 0, "Invalid minimum proof count");
+
+        // 챌린지 해시값은 OGUOGU에서 ID값으로 활용되기 때문에, 중복되지 않아야 합니다.
+        require(challengeHashes[challengeHash] == address(0), "Challenge already exists");
+        challengeHashes[challengeHash] = msg.sender;
 
         // [OguOgu의 Signature가 필요한 이유]
         //  챌린지를 검증하는 사람에게 challenge 정보를 제공한 이후에 challengeHash와 challengeSignature를 생성할 수 있기 때문에

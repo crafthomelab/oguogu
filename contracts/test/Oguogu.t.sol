@@ -87,6 +87,19 @@ contract OGUOGUTest is Test {
         assertEq(challengeId, 1);
     }
 
+    function test_block_duplicated_createChallenge() public {
+        vm.startPrank(user0);
+        testUSDT.approve(address(oguogu), 10e6);
+        oguogu.depositReward(address(user0), 10e6);
+
+        bytes32 chHash = bytes32(uint256(123));
+        bytes memory challengeSignature = generateSignature(0x1, chHash);
+
+        oguogu.createChallenge(10e6, chHash, challengeSignature, block.timestamp + 1 days, 10, user0);
+        vm.expectRevert("Challenge already exists");
+        oguogu.createChallenge(10e6, chHash, challengeSignature, block.timestamp + 1 days, 10, user0);
+    }
+
     function test_block_already_passed_createChallenge() public {
         vm.startPrank(user0);
         testUSDT.approve(address(oguogu), 10e6);
@@ -95,8 +108,7 @@ contract OGUOGUTest is Test {
         vm.expectRevert("Invalid due date");
         bytes32 chHash = bytes32(uint256(123));
         bytes memory challengeSignature = generateSignature(0x1, chHash);
-        uint256 challengeId =
-            oguogu.createChallenge(10e6, chHash, challengeSignature, block.timestamp - 1 days, 10, user0);
+        oguogu.createChallenge(10e6, chHash, challengeSignature, block.timestamp - 1 days, 10, user0);
     }
 
     function test_submitProof() public {
@@ -106,8 +118,7 @@ contract OGUOGUTest is Test {
 
         bytes32 chHash = bytes32(uint256(123));
         bytes memory challengeSignature = generateSignature(0x1, chHash);
-        uint256 challengeId =
-            oguogu.createChallenge(10e6, chHash, challengeSignature, block.timestamp + 1 days, 10, user0);
+        oguogu.createChallenge(10e6, chHash, challengeSignature, block.timestamp + 1 days, 10, user0);
 
         vm.stopPrank();
 
