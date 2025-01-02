@@ -88,6 +88,13 @@ class Challenge:
             receipent_address=receipent_address,
             proofs=[],
         )
+        
+    def available_to_submit_proof(self) -> bool:
+        return (
+            self.status == ChallengeStatus.OPEN
+            and self.end_date >= datetime.now(pytz.utc)
+            and len(self.proofs) < self.minimum_proof_count
+        )   
 
     def open(
         self, 
@@ -97,15 +104,6 @@ class Challenge:
         self.id = challenge_id
         self.challenger_address = Web3.to_checksum_address(challenger_address)
         self.status = ChallengeStatus.OPEN
-        
-    def add_proof(self, content: Dict[str, any]) -> bool:
-        if self.status != ChallengeStatus.OPEN:
-            raise ValueError("only allow open challenge")
-        
-        self.proofs.append(
-            ChallengeProof.new(content)
-        )
-        return len(self.proofs) >= self.minimum_proof_count        
         
     def success(self):
         if len(self.proofs) < self.minimum_proof_count:
@@ -142,13 +140,15 @@ class ChallengeProof:
     """ 챌린지 수행 증명 자료 """
     proof_hash: str
     content: Dict[str, any]
+    proof_date: datetime
     
     @staticmethod
-    def new(content: Dict[str, any]) -> "ChallengeProof":
+    def new(content: Dict[str, any], proof_date: datetime) -> "ChallengeProof":
         proof_hash = create_hash(**content)
         return ChallengeProof(
             proof_hash=Web3.to_hex(proof_hash), 
-            content=content
+            content=content,
+            proof_date=proof_date
         )
 
 @dataclass

@@ -53,9 +53,6 @@ async def test_submit_proofs(challenge_repository: ChallengeRepository, user0_ac
     
     await challenge_repository.open_challenge(challenge)
     
-    challenge.add_proof({"test": "test0"})
-    challenge.add_proof({"test": "test1"})
-    
     await challenge_repository.add_proof(challenge.hash, challenge.proofs[0])
     await challenge_repository.add_proof(challenge.hash, challenge.proofs[1])
     

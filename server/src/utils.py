@@ -30,6 +30,8 @@ def verify_signature(
 ) -> bool:
     """ 서명을 검증합니다 """
     message = encode_defunct(hash_value)
+    if isinstance(signature, str):
+        signature = HexBytes(signature)
     recovered_address = Account.recover_message(message, signature=signature)
     return Web3.to_checksum_address(recovered_address) == Web3.to_checksum_address(signer_address)
 

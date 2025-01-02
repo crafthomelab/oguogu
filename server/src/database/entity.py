@@ -71,12 +71,7 @@ class ChallengeEntity(Base):
             end_date=self.end_date,
             minimum_proof_count=self.minimum_proof_count,
             receipent_address=self.receipent_address,
-            proofs=[
-                ChallengeProof(
-                    proof_hash=p.proof_hash,
-                    content=p.content,
-                ) for p in self.proofs
-            ],
+            proofs=[proof.to_domain() for proof in self.proofs],
         )
 
 
@@ -86,6 +81,7 @@ class ChallengeProofEntity(Base):
     proof_hash: Mapped[str] = mapped_column(String, primary_key=True)
     challenge_hash: Mapped[str] = mapped_column(String, ForeignKey("challenges.hash"))
     content: Mapped[dict] = mapped_column(JSON)
+    proof_date: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
     @staticmethod
     def from_domain(challenge_hash: str, domain: ChallengeProof) -> "ChallengeProofEntity":
@@ -93,5 +89,12 @@ class ChallengeProofEntity(Base):
             challenge_hash=challenge_hash,
             proof_hash=domain.proof_hash,
             content=domain.content,
+            proof_date=domain.proof_date,
         )
         
+    def to_domain(self) -> ChallengeProof:
+        return ChallengeProof(
+            proof_hash=self.proof_hash,
+            content=self.content,
+            proof_date=self.proof_date,
+        )
