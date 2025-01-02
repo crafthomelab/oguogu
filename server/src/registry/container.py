@@ -1,7 +1,7 @@
 from dependency_injector import containers, providers
 
 from src.database.container import DataBaseContainer
-from src.registry.service import ChallengeRegistryService
+from src.registry.challenge import ChallengeRegistryService
 from src.settings import Settings
 
 class RegistryContainer(containers.DeclarativeContainer):

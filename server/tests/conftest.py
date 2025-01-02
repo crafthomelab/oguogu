@@ -2,7 +2,7 @@ import pytest
 from eth_account import Account
 
 from src.database.repository import ChallengeRepository
-from src.registry.service import ChallengeRegistryService
+from src.registry.challenge import ChallengeRegistryService
 from src.utils import send_transaction
 from web3 import Web3
 from web3.contract import Contract

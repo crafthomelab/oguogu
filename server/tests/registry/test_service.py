@@ -3,7 +3,7 @@ from eth_account import Account
 import pytest
 import pytz
 from src.domains import Challenge, ChallengeStatus
-from src.registry.service import ChallengeRegistryService
+from src.registry.challenge import ChallengeRegistryService
 from src.utils import send_transaction
 from web3 import Web3
 from web3.contract import Contract
