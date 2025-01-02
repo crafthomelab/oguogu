@@ -1,4 +1,5 @@
 from src.database.repository import ChallengeRepository
+from src.domains import Challenge
 from src.registry.transaction import TransactionManager
 
 
@@ -13,13 +14,10 @@ class ChallengeRewardService:
         self.complete_function = contract.functions.completeChallenge
         self.challenge_completed_event = contract.events.ChallengeCompleted()
 
-    async def complete_challenge(
-        self, 
-        challenge_id: int
-    ) -> str:
+    async def complete_challenge(self, challenge_hash: str) -> Challenge:
         """ 챌린지를 완료하고, 보상 트랜잭션을 지급합니다.
         """
-        challenge = await self.repository.get_challenge_by_id(challenge_id)
+        challenge = await self.repository.get_challenge(challenge_hash)
         if not challenge.available_to_complete():
             raise ValueError("Challenge is not available to complete")
         request = self.complete_function(challenge.id)
@@ -40,5 +38,5 @@ class ChallengeRewardService:
             else:
                 challenge.fail(tx_hash, payment_reward, complete_date)
             await self.repository.complete_challenge(challenge)
-        return tx_hash
+        return challenge
         

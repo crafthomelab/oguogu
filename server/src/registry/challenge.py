@@ -1,5 +1,6 @@
+from typing import List
 from src.database.repository import ChallengeRepository
-from src.domains import Challenge, ChallengeSignature
+from src.domains import Challenge, ChallengeSignature, ChallengeStatus
 from src.registry.transaction import TransactionManager
 from web3 import Web3
 import logging
@@ -37,6 +38,20 @@ class ChallengeRegistryService:
         if challenge is None:
             raise Exception(f"Challenge {challenge_hash} not found")
         return challenge
+    
+    async def get_active_challenges(
+        self,
+        user_address: str,
+    ) -> List[Challenge]:
+        challenges = await self.repository.get_challenges_by_challenger(
+            user_address, 
+            [ChallengeStatus.OPEN, ChallengeStatus.SUCCESS, ChallengeStatus.FAILED]
+        )
+        return sorted(
+            challenges, 
+            key=lambda x: x.start_date, 
+            reverse=True
+        )
         
     async def sign_new_challenge(
         self, 
