@@ -230,7 +230,7 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
         return signedHash.recover(signature) == _signer;
     }
 
-    function pickPaymentReward(uint256 reward) public view returns (uint256) {
+    function pickPaymentReward(uint256 reward) private view returns (uint256) {
         return reward * pickRandomValue() / 100;
     }
 
