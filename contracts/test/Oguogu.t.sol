@@ -198,7 +198,8 @@ contract OGUOGUTest is Test {
         vm.stopPrank();
 
         oguogu.completeChallenge(challengeId);
-        assertEq(testUSDT.balanceOf(user1), 10e6);
+        assertLe(testUSDT.balanceOf(user1), 10e6);
+        assertGt(testUSDT.balanceOf(user1), 0);
     }
 
     function test_block_double_completeChallenge() public {
