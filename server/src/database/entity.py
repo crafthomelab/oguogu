@@ -17,8 +17,8 @@ class Base(AsyncAttrs, DeclarativeBase):
 class ChallengeEntity(Base):
     __tablename__ = "challenges"
 
-    challenge_hash: Mapped[str] = mapped_column(String, primary_key=True)
-    challenge_id: Mapped[int] = mapped_column(Integer, nullable=True)
+    hash: Mapped[str] = mapped_column(String, primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, nullable=True)
     status: Mapped[str] = mapped_column(String)
 
     challenger_address: Mapped[str] = mapped_column(String)
@@ -43,8 +43,8 @@ class ChallengeEntity(Base):
     @staticmethod
     def from_domain(domain: Challenge) -> "ChallengeEntity":
         return ChallengeEntity(
-            challenge_hash=domain.challenge_hash,
-            challenge_id=domain.challenge_id,
+            hash=domain.hash,
+            id=domain.id,
             status=domain.status.value,
             challenger_address=domain.challenger_address,
             reward_amount=domain.reward_amount,
@@ -59,8 +59,8 @@ class ChallengeEntity(Base):
 
     def to_domain(self) -> Challenge:
         return Challenge(
-            challenge_hash=self.challenge_hash,
-            challenge_id=self.challenge_id,
+            hash=self.hash,
+            id=self.id,
             status=ChallengeStatus(self.status),
             challenger_address=self.challenger_address,
             reward_amount=self.reward_amount,
@@ -84,7 +84,7 @@ class ChallengeProofEntity(Base):
     __tablename__ = "challenge_proofs"
 
     proof_hash: Mapped[str] = mapped_column(String, primary_key=True)
-    challenge_hash: Mapped[str] = mapped_column(String, ForeignKey("challenges.challenge_hash"))
+    challenge_hash: Mapped[str] = mapped_column(String, ForeignKey("challenges.hash"))
     content: Mapped[dict] = mapped_column(JSON)
 
     @staticmethod

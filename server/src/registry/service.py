@@ -6,7 +6,7 @@ from src.database.repository import ChallengeRepository
 from src.domains import Challenge, ChallengeSignature
 from src.settings import Settings
 from src.utils import create_signature
-from web3 import AsyncWeb3
+from web3 import AsyncWeb3, Web3
 import logging
 
 logger = logging.getLogger(__name__)
@@ -35,9 +35,17 @@ class ChallengeRegistryService:
         self.operator = Account.from_key(settings.OPERATOR_PRIVATE_KEY)
         self.web3 = AsyncWeb3(AsyncWeb3.AsyncHTTPProvider(settings.WEB3_PROVIDER_URL))
         self.contract = self.web3.eth.contract(
-            address=settings.OGUOGU_CONTRACT_ADDRESS,
+            address=settings.OGUOGU_ADDRESS,
             abi=OGUOGU_EVENT_ABI
         )
+        
+    async def get_challenge(
+        self, challenge_hash: str
+    ) -> Challenge:
+        challenge = await self.repository.get_challenge(challenge_hash)
+        if challenge is None:
+            raise Exception(f"Challenge {challenge_hash} not found")
+        return challenge
         
     async def sign_new_challenge(
         self, 
@@ -54,11 +62,11 @@ class ChallengeRegistryService:
             signature=signature.to_0x_hex()
         )
     
-    async def open_challenge(
+    async def register_challenge(
         self, 
         transaction_hash: str,
     ):
-        """ 챌린지를 엽니다 """
+        """ 챌린지를 서버에 등록합니다. """
         logger.info(f"Opening challenge {transaction_hash}")
         receipt = await self.wait_for_tx(transaction_hash)
         
@@ -69,7 +77,7 @@ class ChallengeRegistryService:
                 logger.info(f"skip {log}")
                 continue
 
-            challenge_hash = event['args']['challengeHash']
+            challenge_hash = Web3.to_hex(event['args']['challengeHash'])
             challenge = await self.repository.get_challenge(challenge_hash)
             
             challenge.open(

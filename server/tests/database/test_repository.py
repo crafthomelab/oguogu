@@ -3,16 +3,11 @@ from eth_account import Account
 import pytest
 import pytz
 from src.database.repository import ChallengeRepository
-from src.domains import Challenge, ChallengeProof, ChallengeStatus
-
-
-@pytest.fixture(scope='session')
-def given_repository(local_session_manager):
-    return ChallengeRepository(session_factory=local_session_manager.session)
+from src.domains import Challenge, ChallengeStatus
 
 
 @pytest.mark.asyncio(loop_scope="session")
-async def test_create_challenge(given_repository: ChallengeRepository, user0_account: Account):
+async def test_create_challenge(challenge_repository: ChallengeRepository, user0_account: Account):
     challenge = Challenge.new(
         challenger_address=user0_account.address,
         reward_amount=100,
@@ -24,11 +19,11 @@ async def test_create_challenge(given_repository: ChallengeRepository, user0_acc
         receipent_address=user0_account.address,
     )
     
-    await given_repository.create_challenge(challenge)
+    await challenge_repository.create_challenge(challenge)
     
-    challenge = await given_repository.get_challenge(challenge.challenge_hash)
+    challenge = await challenge_repository.get_challenge(challenge.hash)
     assert challenge is not None
-    assert challenge.challenge_hash == challenge.challenge_hash
+    assert challenge.hash == challenge.hash
     assert challenge.status == challenge.status
     assert challenge.challenger_address == challenge.challenger_address
     assert challenge.reward_amount == challenge.reward_amount
@@ -41,7 +36,7 @@ async def test_create_challenge(given_repository: ChallengeRepository, user0_acc
     
 
 @pytest.mark.asyncio(loop_scope="session")
-async def test_submit_proofs(given_repository: ChallengeRepository, user0_account: Account):
+async def test_submit_proofs(challenge_repository: ChallengeRepository, user0_account: Account):
     challenge = Challenge.new(
         challenger_address=user0_account.address,
         reward_amount=100,
@@ -53,23 +48,23 @@ async def test_submit_proofs(given_repository: ChallengeRepository, user0_accoun
         receipent_address=user0_account.address,
     )
     
-    await given_repository.create_challenge(challenge)
+    await challenge_repository.create_challenge(challenge)
     challenge.open(1, user0_account.address)
     
-    await given_repository.open_challenge(challenge)
+    await challenge_repository.open_challenge(challenge)
     
     challenge.add_proof({"test": "test0"})
     challenge.add_proof({"test": "test1"})
     
-    await given_repository.add_proof(challenge.challenge_hash, challenge.proofs[0])
-    await given_repository.add_proof(challenge.challenge_hash, challenge.proofs[1])
+    await challenge_repository.add_proof(challenge.hash, challenge.proofs[0])
+    await challenge_repository.add_proof(challenge.hash, challenge.proofs[1])
     
-    challenge = await given_repository.get_challenge(challenge.challenge_hash)
+    challenge = await challenge_repository.get_challenge(challenge.hash)
     assert len(challenge.proofs) == 2
     
     challenge.success()
-    await given_repository.update_challenge_status(challenge)
+    await challenge_repository.update_challenge_status(challenge)
     
-    challenge = await given_repository.get_challenge(challenge.challenge_hash)
+    challenge = await challenge_repository.get_challenge(challenge.hash)
     assert challenge.status == ChallengeStatus.SUCCESS
     

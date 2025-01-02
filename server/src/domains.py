@@ -11,8 +11,8 @@ from src.utils import create_hash
 @dataclass
 class Challenge:
     """ Challenge 도메인 """
-    challenge_hash: str
-    challenge_id: Optional[int]
+    hash: str
+    id: Optional[int]
     status: "ChallengeStatus"
     
     challenger_address: str
@@ -74,8 +74,8 @@ class Challenge:
         )
         
         return Challenge(
-            challenge_id=None,
-            challenge_hash=challenge_hash.hex(),
+            id=None,
+            hash=Web3.to_hex(challenge_hash),
             status=ChallengeStatus.INIT,
             challenger_address=challenger_address,
             reward_amount=reward_amount,
@@ -94,7 +94,7 @@ class Challenge:
         challenge_id: int,
         challenger_address: str
     ):
-        self.challenge_id = challenge_id
+        self.id = challenge_id
         self.challenger_address = Web3.to_checksum_address(challenger_address)
         self.status = ChallengeStatus.OPEN
         
@@ -147,7 +147,7 @@ class ChallengeProof:
     def new(content: Dict[str, any]) -> "ChallengeProof":
         proof_hash = create_hash(**content)
         return ChallengeProof(
-            proof_hash=proof_hash.hex(), 
+            proof_hash=Web3.to_hex(proof_hash), 
             content=content
         )
 

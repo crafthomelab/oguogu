@@ -18,7 +18,7 @@ class ChallengeRepository:
             stmt = (
                 select(ChallengeEntity)
                 .options(selectinload(ChallengeEntity.proofs))
-                .where(ChallengeEntity.challenge_hash == challenge_hash)
+                .where(ChallengeEntity.hash == challenge_hash)
             )
             result = await session.execute(stmt)
             challenge_entity = result.scalar_one_or_none()
@@ -59,11 +59,11 @@ class ChallengeRepository:
         async with self.session_factory() as session:
             stmt = (
                 update(ChallengeEntity)
-                .filter(ChallengeEntity.challenge_hash == challenge.challenge_hash)
+                .filter(ChallengeEntity.hash == challenge.hash)
                 .values(
                     status=challenge.status.value,
                     challenger_address=challenge.challenger_address,
-                    challenge_id=challenge.challenge_id,
+                    id=challenge.id,
                 )
             )
             await session.execute(stmt)
@@ -74,7 +74,7 @@ class ChallengeRepository:
         async with self.session_factory() as session:
             stmt = (
                 update(ChallengeEntity)
-                .filter(ChallengeEntity.challenge_hash == challenge.challenge_hash)
+                .filter(ChallengeEntity.hash == challenge.hash)
                 .values(status=challenge.status.value)
             )
             await session.execute(stmt)
@@ -89,6 +89,6 @@ class ChallengeRepository:
             
 
     async def _exist_challenge(self, challenge_hash: str, session: AsyncSession) -> bool:
-        stmt = select(ChallengeEntity).where(ChallengeEntity.challenge_hash == challenge_hash)
+        stmt = select(ChallengeEntity).where(ChallengeEntity.hash == challenge_hash)
         result = await session.execute(stmt)
         return result.scalar_one_or_none() is not None
