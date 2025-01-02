@@ -34,11 +34,11 @@ class ChallengeRewardService:
         complete_date = await self.transaction.aget_txreceipt_datetime(tx_receipt)
         for event in events:
             status = event['args']['status']
+            payment_reward = event['args']['paymentReward']
             if status == 1:
-                challenge.success(tx_hash, complete_date)
+                challenge.success(tx_hash, payment_reward, complete_date)
             else:
-                challenge.fail(tx_hash, complete_date)
+                challenge.fail(tx_hash, payment_reward, complete_date)
             await self.repository.complete_challenge(challenge)
-        
         return tx_hash
         
