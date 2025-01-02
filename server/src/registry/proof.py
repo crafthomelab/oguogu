@@ -51,8 +51,8 @@ class ProofRegistryService:
 
         if not verify_signature(
             challenge.challenger_address, 
+            proof_signature,
             proof_hash, 
-            proof_signature
         ):
             raise Exception("잘못된 서명입니다.")
         

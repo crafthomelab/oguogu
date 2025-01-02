@@ -4,6 +4,7 @@ from eth_account import Account
 from src.database.repository import ChallengeRepository
 from src.registry.challenge import ChallengeRegistryService
 from src.registry.container import RegistryContainer
+from src.registry.proof import ProofRegistryService
 from src.utils import send_transaction
 from web3 import Web3
 from web3.contract import Contract
@@ -208,3 +209,11 @@ def challenge_repository(local_database_container):
 @pytest.fixture(scope='session')
 def challenge_registry_service(local_registry_container):
     return local_registry_container.registry()
+
+@pytest.fixture(scope='session')
+def proof_registry_service(local_registry_container) -> ProofRegistryService:
+    return local_registry_container.proof()
+
+@pytest.fixture(scope='session')
+def transaction_manager(local_registry_container):
+    return local_registry_container.transaction()

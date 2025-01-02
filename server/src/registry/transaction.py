@@ -50,8 +50,7 @@ class TransactionManager:
     
     def create_signature(self, challenge_hash: str, account: Account=None) -> str:
         logger.info(f"create_signature {challenge_hash}")
-        if account is None:
-            account = self.operator
+        account = self.operator if account is None else account
         return create_signature(account, challenge_hash)
         
     async def aget_event_from_transcation(
@@ -78,8 +77,7 @@ class TransactionManager:
         account: Account = None,
     ) -> TxReceipt:
         logger.info(f"send_transaction {func}")
-        if account is None:
-            account = self.operator
+        account = self.operator if account is None else account
         
         nonce = self.web3.eth.get_transaction_count(account.address)
         tx = func.build_transaction({'from': account.address, 'nonce': nonce})

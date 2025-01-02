@@ -7,7 +7,6 @@ from src.registry.challenge import ChallengeRegistryService
 from src.utils import send_transaction
 from web3 import Web3
 from web3.contract import Contract
-from web3.types import TxReceipt
 
 @pytest.mark.asyncio(loop_scope="session")
 async def test_open_challenge_scenario(

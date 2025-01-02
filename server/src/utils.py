@@ -63,12 +63,7 @@ def send_transaction(
     tx = func.build_transaction({'from': account.address, 'nonce': nonce})
     signed_txn = account.sign_transaction(tx)
     txn_hash = web3.eth.send_raw_transaction(signed_txn.raw_transaction)
-    tx_receipt = web3.eth.wait_for_transaction_receipt(txn_hash)
-    
-    if tx_receipt.status != 1:
-        raise Exception(f"Failed to send transaction.. status: {tx_receipt.status} tx_hash: {txn_hash}")
-    
-    return tx_receipt
+    return web3.eth.wait_for_transaction_receipt(txn_hash)
     
     
 async def asend_transaction(

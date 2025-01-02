@@ -40,12 +40,12 @@ SYSTEM_PROMPT = """당신은 사용자가 챌린지를 수행했는지를 확인
 당신은 챌린지 조건을 만족하지 않는 증명 자료일 경우, 왜 만족하지 않았는지 설명해야 합니다.
 
 챌린지 정보는 아래와 같은 포맷으로 제공됩니다.
-제목: 
-설명: 
-기간: 
+제목: <챌린지 제목>
+설명: <어떤 챌린지이며, 어떤 식으로 평가하면 되는지 서술>
+기간: <시작일자> ~ <종료일자>
 ----------
 증명 자료는 아래와 같은 포맷으로 제공됩니다.
-촬영 일자: 
+촬영 일자: <제공된 이미지의 EXIF 데이터 내 촬영 일자>
 """
 
 class ProofGrader:
@@ -81,13 +81,13 @@ class ProofGrader:
         
         self.chain = prompt | model
         
-    def grade_proof(
+    async def grade_proof(
         self, 
         challenge: Challenge,
         proof_content: Dict[str, any],
     ) -> ProofGraderResponse:
         if challenge.type == "photos":
-            return self.grade_photos_proof(challenge, proof_content)
+            return await self.grade_photos_proof(challenge, proof_content)
         else:   
             raise ValueError(f"Unsupported proof type: {challenge.type}"  )
 
