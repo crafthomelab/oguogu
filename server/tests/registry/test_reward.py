@@ -61,7 +61,7 @@ async def test_submit_proof(
     # 7. 유저가 챌린지 증명하기
     proof_content = {
         "content_type": "image/jpeg",
-        "image_bytes": "test"
+        "image_bytes": "test2"
     }    
     proof_hash = mock_proof_registry_service.calculate_proof_hash(proof_content)
     proof_signature = transaction_manager.create_signature(proof_hash, user0_account).to_0x_hex()

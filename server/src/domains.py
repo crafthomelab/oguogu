@@ -120,12 +120,16 @@ class Challenge:
         self.challenger_address = Web3.to_checksum_address(challenger_address)
         self.status = ChallengeStatus.OPEN
         
-    def success(self, payment_transaction: str, complete_date: datetime):        
+    def success(self, payment_transaction: str, complete_date: datetime=None):        
+        if complete_date is None:
+            complete_date = datetime.now(pytz.utc)
         self.status = ChallengeStatus.SUCCESS
         self.payment_transaction = payment_transaction
         self.complete_date = complete_date
     
-    def fail(self, payment_transaction: str, complete_date: datetime):
+    def fail(self, payment_transaction: str, complete_date: datetime=None):
+        if complete_date is None:
+            complete_date = datetime.now(pytz.utc)
         self.status = ChallengeStatus.FAILED
         self.payment_transaction = payment_transaction
         self.complete_date = complete_date
