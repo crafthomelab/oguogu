@@ -29,6 +29,9 @@ class Challenge:
     receipent_address: str
     proofs: List["ChallengeProof"]
     
+    payment_transaction: Optional[str] = None
+    complete_date: Optional[datetime] = None
+    
     @staticmethod
     def new(
         challenger_address: str,
@@ -87,6 +90,8 @@ class Challenge:
             minimum_proof_count=minimum_proof_count,
             receipent_address=receipent_address,
             proofs=[],
+            payment_transaction=None,
+            complete_date=None,
         )
         
     def available_to_submit_proof(self) -> bool:
@@ -95,6 +100,16 @@ class Challenge:
             and self.end_date >= datetime.now(pytz.utc)
             and len(self.proofs) < self.minimum_proof_count
         )   
+        
+    def available_to_complete(self) -> bool:
+        """ 챌린지 완료 처리 가능한지 여부 """
+        if self.status != ChallengeStatus.OPEN:
+            return False
+        
+        if len(self.proofs) >= self.minimum_proof_count:
+            return True
+        
+        return self.end_date < datetime.now(pytz.utc)
 
     def open(
         self, 
@@ -105,26 +120,16 @@ class Challenge:
         self.challenger_address = Web3.to_checksum_address(challenger_address)
         self.status = ChallengeStatus.OPEN
         
-    def success(self):
-        if len(self.proofs) < self.minimum_proof_count:
-            raise ValueError("Proof count is less than minimum proof count")
-        
-        if self.status != ChallengeStatus.OPEN:
-            raise ValueError("only allow open challenge")
-        
+    def success(self, payment_transaction: str, complete_date: datetime):        
         self.status = ChallengeStatus.SUCCESS
-
-    def fail(self):
-        if len(self.proofs) >= self.minimum_proof_count:
-            raise ValueError("Proof count is greater than minimum proof count")
-        
-        if self.end_date >= datetime.now(pytz.utc):
-            raise ValueError("Challenge is not ended")
-        
-        if self.status != ChallengeStatus.OPEN:
-            raise ValueError("only allow open challenge")
-        
+        self.payment_transaction = payment_transaction
+        self.complete_date = complete_date
+    
+    def fail(self, payment_transaction: str, complete_date: datetime):
         self.status = ChallengeStatus.FAILED
+        self.payment_transaction = payment_transaction
+        self.complete_date = complete_date
+        
 
 
 class ChallengeStatus(Enum):

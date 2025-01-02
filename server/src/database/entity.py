@@ -34,6 +34,9 @@ class ChallengeEntity(Base):
 
     receipent_address: Mapped[str] = mapped_column(String)
     
+    payment_transaction: Mapped[str] = mapped_column(String, nullable=True)
+    complete_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
+    
     proofs: Mapped[List["ChallengeProofEntity"]] = relationship(
         "ChallengeProofEntity", 
         backref=backref("challenge", lazy="joined"), 
@@ -55,6 +58,8 @@ class ChallengeEntity(Base):
             end_date=domain.end_date,
             minimum_proof_count=domain.minimum_proof_count,
             receipent_address=domain.receipent_address,
+            payment_transaction=domain.payment_transaction,
+            complete_date=domain.complete_date,
         )
 
     def to_domain(self) -> Challenge:
@@ -71,6 +76,8 @@ class ChallengeEntity(Base):
             end_date=self.end_date,
             minimum_proof_count=self.minimum_proof_count,
             receipent_address=self.receipent_address,
+            payment_transaction=self.payment_transaction,
+            complete_date=self.complete_date,
             proofs=[proof.to_domain() for proof in self.proofs],
         )
 

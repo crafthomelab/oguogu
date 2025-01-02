@@ -60,7 +60,7 @@ class ChallengeRegistryService:
         """ 챌린지를 서버에 등록합니다. """
         logger.info(f"Opening challenge {transaction_hash}")
         
-        events = await self.transaction.aget_event_from_transcation(
+        events = await self.transaction.aget_events_from_transcation(
             transaction_hash,
             self.challenge_created_event
             )

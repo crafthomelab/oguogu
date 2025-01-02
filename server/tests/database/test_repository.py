@@ -63,7 +63,7 @@ async def test_submit_proofs(challenge_repository: ChallengeRepository, user0_ac
     assert len(challenge.proofs) == 2
     
     challenge.success()
-    await challenge_repository.update_challenge_status(challenge)
+    await challenge_repository.complete_challenge(challenge)
     
     challenge = await challenge_repository.get_challenge(challenge.hash)
     assert challenge.status == ChallengeStatus.SUCCESS

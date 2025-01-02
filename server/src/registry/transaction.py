@@ -53,7 +53,7 @@ class TransactionManager:
         account = self.operator if account is None else account
         return create_signature(account, challenge_hash)
         
-    async def aget_event_from_transcation(
+    async def aget_events_from_transcation(
         self, 
         transaction_hash,
         contract_event: ContractEvent,

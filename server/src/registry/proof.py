@@ -77,8 +77,8 @@ class ProofRegistryService:
         )
         
         tx_receipt = await self.transaction.asend_transaction(request)
+        proof_date = await self.transaction.aget_txreceipt_datetime(tx_receipt)
         
-        proof_date = self.transaction.get_txreceipt_datetime(tx_receipt)
         proof = ChallengeProof.new(proof_content, proof_date)
         await self.repository.add_proof(challenge.hash, proof)
         return proof

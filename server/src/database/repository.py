@@ -15,7 +15,11 @@ class ChallengeRepository:
     async def get_challenge_by_id(self, challenge_id: int) -> Optional[Challenge]:
         """ 챌린지 ID로 조회하기 """
         async with self.session_factory() as session:
-            stmt = select(ChallengeEntity).where(ChallengeEntity.id == challenge_id)
+            stmt = (
+                select(ChallengeEntity)
+                .options(selectinload(ChallengeEntity.proofs))
+                .where(ChallengeEntity.id == challenge_id)
+            )
             result = await session.execute(stmt)
             challenge_entity = result.scalar_one_or_none()
             if challenge_entity is None:
@@ -79,13 +83,16 @@ class ChallengeRepository:
             await session.execute(stmt)
             await session.commit()
             
-    async def update_challenge_status(self, challenge: Challenge) -> None:
-        """ 챌린지 상태 업데이트하기 """
+    async def complete_challenge(self, challenge: Challenge) -> None:
+        """ 챌린지 완료하기 """
         async with self.session_factory() as session:
             stmt = (
                 update(ChallengeEntity)
                 .filter(ChallengeEntity.hash == challenge.hash)
-                .values(status=challenge.status.value)
+                .values(
+                    status=challenge.status.value,
+                    payment_transaction=challenge.payment_transaction,
+                )
             )
             await session.execute(stmt)
             await session.commit()

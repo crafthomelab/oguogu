@@ -1,10 +1,11 @@
+from unittest.mock import MagicMock
 import pytest
 from eth_account import Account
 
-from src.database.repository import ChallengeRepository
-from src.registry.challenge import ChallengeRegistryService
 from src.registry.container import RegistryContainer
+from src.registry.grader import ProofGraderResponse
 from src.registry.proof import ProofRegistryService
+from src.registry.reward import ChallengeRewardService
 from src.utils import send_transaction
 from web3 import Web3
 from web3.contract import Contract
@@ -103,7 +104,7 @@ def given_user_usdt(
     user1_account: Account,
     web3:Web3
 ):
-    for user in [user0_account, user1_account]:
+    for user in [user0_account]:
         send_transaction(
             web3, user, 
             test_usdt_contract.functions.mint(
@@ -217,3 +218,19 @@ def proof_registry_service(local_registry_container) -> ProofRegistryService:
 @pytest.fixture(scope='session')
 def transaction_manager(local_registry_container):
     return local_registry_container.transaction()
+
+class AsyncMock(MagicMock):
+    async def __call__(self, *args, **kwargs):
+        return super(AsyncMock, self).__call__(*args, **kwargs)
+
+@pytest.fixture(scope='session')
+def mock_proof_registry_service(proof_registry_service: ProofRegistryService) -> ProofRegistryService:
+    proof_registry_service.grader.grade_proof = AsyncMock(return_value=ProofGraderResponse(
+        is_correct=True,
+        message="Good job!"
+    ))
+    return proof_registry_service
+
+@pytest.fixture(scope='session')
+def challenge_reward_service(local_registry_container) -> ChallengeRewardService:
+    return local_registry_container.reward()
