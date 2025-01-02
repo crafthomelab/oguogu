@@ -57,8 +57,8 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
     }
 
     event DepositReward(address indexed challenger, uint256 amount);
+    event ChallengeCreated(uint256 indexed tokenId, address indexed challenger, bytes32 challengeHash);
     event SubmitProof(uint256 indexed tokenId, address indexed challenger, bytes32 proofHash);
-    event ChallengeCreated(uint256 indexed tokenId, address indexed challenger);
     event ChallengeCompleted(uint256 indexed tokenId, address indexed challenger, ChallengeStatus status);
 
     function initialize(address _rewardToken, address _operator) public initializer {
@@ -129,7 +129,7 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
             Challenge(reward, challengeHash, dueDate, minimumProofCount, receipent, new bytes32[](0), false);
 
         _safeMint(msg.sender, _challengeId);
-        emit ChallengeCreated(_challengeId, msg.sender);
+        emit ChallengeCreated(_challengeId, msg.sender, challengeHash);
         return _challengeId++;
     }
 

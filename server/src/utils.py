@@ -1,4 +1,5 @@
 from typing import Any, Dict, Union
+from hexbytes import HexBytes
 from web3 import Web3
 from eth_account import Account
 from eth_account.messages import encode_defunct
@@ -10,7 +11,7 @@ def create_hash(**kwargs) -> bytes:
     return to_bytes32(Web3.keccak(data_bytes))
 
 
-def create_signature(signer: Account, hash_value: bytes) -> bytes:
+def create_signature(signer: Account, hash_value: bytes) -> HexBytes:
     """ 챌린지 해시에 서명합니다. """
     message = encode_defunct(hash_value)
     return signer.sign_message(message).signature

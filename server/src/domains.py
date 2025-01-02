@@ -150,3 +150,10 @@ class ChallengeProof:
             proof_hash=proof_hash.hex(), 
             content=content
         )
+
+@dataclass
+class ChallengeSignature:
+    """ 챌린지 서명 도메인 """
+    challenge_hash: str
+    signature: str
+
