@@ -5,7 +5,7 @@ from src.registry.container import RegistryContainer
 
 class AppContainer(containers.DeclarativeContainer):
     wiring_config = containers.WiringConfiguration(
-        modules=["src.router"]
+        modules=["src.routers"]
     )
     
     registry = providers.Container(RegistryContainer)

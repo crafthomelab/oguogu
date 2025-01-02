@@ -9,9 +9,6 @@ from fastapi.middleware.gzip import GZipMiddleware
 
 logger = logging.getLogger(__name__)
 
-app = FastAPI()
-
-
 def create_app() -> FastAPI:
     container = AppContainer()
 
@@ -41,3 +38,5 @@ def create_app() -> FastAPI:
         )
 
     return app
+
+app = create_app()
