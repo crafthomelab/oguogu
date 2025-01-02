@@ -59,7 +59,10 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
     event DepositReward(address indexed challenger, uint256 amount);
     event ChallengeCreated(uint256 indexed tokenId, address indexed challenger, bytes32 challengeHash);
     event SubmitProof(uint256 indexed tokenId, address indexed challenger, bytes32 proofHash);
-    event ChallengeCompleted(uint256 indexed tokenId, address indexed challenger, ChallengeStatus status);
+
+    event ChallengeCompleted(
+        uint256 indexed tokenId, address indexed challenger, ChallengeStatus status, uint256 paymentReward
+    );
 
     function initialize(address _rewardToken, address _operator) public initializer {
         require(_rewardToken != address(0), "Invalid token address");
@@ -192,13 +195,16 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
         _challenges[tokenId].isClosed = true;
         userAllocatedRewards[challenger] -= challenge.reward;
 
+        uint256 paymentReward = 0;
         if (status == ChallengeStatus.SUCCESS) {
-            // 챌린지 성공 시, 보상을 지급합니다.
-            rewardToken.transfer(challenge.receipent, challenge.reward);
-            userReserves[challenger] -= challenge.reward;
+            // 챌린지 성공 시, 랜덤보상을 지급합니다.
+            paymentReward = pickPaymentReward(challenge.reward);
+            rewardToken.transfer(challenge.receipent, paymentReward);
+
+            userReserves[challenger] -= paymentReward;
         }
 
-        emit ChallengeCompleted(tokenId, challenger, status);
+        emit ChallengeCompleted(tokenId, challenger, status, paymentReward);
         emit MetadataUpdate(tokenId);
     }
 
@@ -222,5 +228,19 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
     function verifySignature(address _signer, bytes32 hash, bytes memory signature) internal pure returns (bool) {
         bytes32 signedHash = hash.toEthSignedMessageHash();
         return signedHash.recover(signature) == _signer;
+    }
+
+    function pickPaymentReward(uint256 reward) private view returns (uint256) {
+        return reward * pickRandomValue() / 100;
+    }
+
+    function pickRandomValue() private view returns (uint256) {
+        /**
+         * blockhash와 block.coinbase를 사용하여 랜덤값을 생성합니다.
+         * : Operator의 조작 가능성을 낮추기 위함입니다.
+         */
+        unchecked {
+            return uint256(keccak256(abi.encodePacked(blockhash(block.number - 1), block.coinbase))) % 100;
+        }
     }
 }
