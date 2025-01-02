@@ -230,6 +230,10 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
         return signedHash.recover(signature) == _signer;
     }
 
+    function pickPaymentReward(uint256 reward) public view returns (uint256) {
+        return reward * pickRandomValue() / 100;
+    }
+
     function pickRandomValue() private view returns (uint256) {
         /**
          * blockhash와 block.coinbase를 사용하여 랜덤값을 생성합니다.
