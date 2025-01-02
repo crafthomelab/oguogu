@@ -54,17 +54,35 @@ def to_bytes32(value: Union[Dict, str, int, bytes]) -> bytes:
 
 
 
-def send_transaction(web3: Web3, account: Account, func: ContractFunction) -> TxReceipt:
+def send_transaction(
+    web3: Web3, 
+    account: Account, 
+    func: ContractFunction
+) -> TxReceipt:
     nonce = web3.eth.get_transaction_count(account.address)
     tx = func.build_transaction({'from': account.address, 'nonce': nonce})
     signed_txn = account.sign_transaction(tx)
     txn_hash = web3.eth.send_raw_transaction(signed_txn.raw_transaction)
-    return web3.eth.wait_for_transaction_receipt(txn_hash)
+    tx_receipt = web3.eth.wait_for_transaction_receipt(txn_hash)
+    
+    if tx_receipt.status != 1:
+        raise Exception(f"Failed to send transaction.. status: {tx_receipt.status} tx_hash: {txn_hash}")
+    
+    return tx_receipt
     
     
-async def asend_transaction(web3: AsyncWeb3, account: Account, func: ContractFunction) -> TxReceipt:
+async def asend_transaction(
+    web3: AsyncWeb3, 
+    account: Account, 
+    func: ContractFunction
+) -> TxReceipt:
     nonce = await web3.eth.get_transaction_count(account.address)
     tx = func.build_transaction({ 'from': account.address, 'nonce': nonce })
     signed_txn = account.sign_transaction(tx)
     txn_hash = await web3.eth.send_raw_transaction(signed_txn.raw_transaction)
-    return await web3.eth.wait_for_transaction_receipt(txn_hash)
+    tx_receipt = await web3.eth.wait_for_transaction_receipt(txn_hash)
+    
+    if tx_receipt.status != 1:
+        raise Exception(f"Failed to send transaction.. status: {tx_receipt.status} tx_hash: {txn_hash}")
+    
+    return tx_receipt

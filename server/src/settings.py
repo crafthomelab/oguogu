@@ -48,7 +48,12 @@ class Settings(BaseSettings):
         description="openai api key",
     )
     
-    OPENAI_MODEL: str = Field(
+    OPENAI_MODEL_NAME: str = Field(
         default="gpt-4o",
         description="openai model name",
+    )
+    
+    OPENAI_MODEL_TEMPERATURE: float = Field(
+        default=0.0,
+        description="openai model temperature",
     )
