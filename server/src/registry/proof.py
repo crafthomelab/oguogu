@@ -1,10 +1,8 @@
 from typing import Dict
-from src.abis.constants import OGUOGU_EVENT_ABI
 from src.database.repository import ChallengeRepository
 from src.domains import Challenge, ChallengeProof
 from src.registry.grader import ProofGrader
 from src.registry.transaction import TransactionManager
-from src.settings import Settings
 from src.utils import create_hash, verify_signature
 import logging
 
@@ -24,16 +22,12 @@ class ProofRegistryService:
         self, 
         repository: ChallengeRepository,
         transaction: TransactionManager,
-        grader: ProofGrader,
-        settings: Settings
+        grader: ProofGrader
     ):
         self.repository = repository
         self.transaction = transaction
-        self.contract = self.transaction.web3.eth.contract(
-            address=settings.OGUOGU_ADDRESS,
-            abi=OGUOGU_EVENT_ABI
-        )
         self.grader = grader
+        self.submit_proof_function = transaction.oguogu_contract().functions.submitProof
         
     def calculate_proof_hash(
         self,
@@ -76,15 +70,15 @@ class ProofRegistryService:
         proof_signature: str,
     ):
         """ 챌린지 수행 증명을 제출합니다. """
-        request = self.contract.functions.submitProof(
+        request = self.submit_proof_function(
             challenge.id,
             self.calculate_proof_hash(proof_content),
             proof_signature,
         )
         
         tx_receipt = await self.transaction.asend_transaction(request)
-        proof_date = await self.transaction.aget_txreceipt_datetime(tx_receipt)
         
+        proof_date = self.transaction.get_txreceipt_datetime(tx_receipt)
         proof = ChallengeProof.new(proof_content, proof_date)
         await self.repository.add_proof(challenge.hash, proof)
         return proof

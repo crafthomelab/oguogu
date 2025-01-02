@@ -3,7 +3,7 @@ from eth_account import Account
 import pytest
 import pytz
 from src.database.repository import ChallengeRepository
-from src.domains import Challenge, ChallengeStatus
+from src.domains import Challenge, ChallengeProof, ChallengeStatus
 
 
 @pytest.mark.asyncio(loop_scope="session")
@@ -53,8 +53,11 @@ async def test_submit_proofs(challenge_repository: ChallengeRepository, user0_ac
     
     await challenge_repository.open_challenge(challenge)
     
-    await challenge_repository.add_proof(challenge.hash, challenge.proofs[0])
-    await challenge_repository.add_proof(challenge.hash, challenge.proofs[1])
+    proof0 = ChallengeProof.new({"test": "test0"}, datetime.now(pytz.utc))
+    proof1 = ChallengeProof.new({"test": "test1"}, datetime.now(pytz.utc))
+    
+    await challenge_repository.add_proof(challenge.hash, proof0)
+    await challenge_repository.add_proof(challenge.hash, proof1)
     
     challenge = await challenge_repository.get_challenge(challenge.hash)
     assert len(challenge.proofs) == 2

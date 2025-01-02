@@ -1,12 +1,7 @@
-import asyncio
-import time
-from eth_account import Account
-from src.abis.constants import OGUOGU_EVENT_ABI
 from src.database.repository import ChallengeRepository
 from src.domains import Challenge, ChallengeSignature
-from src.settings import Settings
-from src.utils import create_signature
-from web3 import AsyncWeb3, Web3
+from src.registry.transaction import TransactionManager
+from web3 import Web3
 import logging
 
 logger = logging.getLogger(__name__)
@@ -29,15 +24,11 @@ class ChallengeRegistryService:
     def __init__(
         self, 
         repository: ChallengeRepository,
-        settings: Settings
+        transaction: TransactionManager,
     ):
         self.repository = repository
-        self.operator = Account.from_key(settings.OPERATOR_PRIVATE_KEY)
-        self.web3 = AsyncWeb3(AsyncWeb3.AsyncHTTPProvider(settings.WEB3_PROVIDER_URL))
-        self.contract = self.web3.eth.contract(
-            address=settings.OGUOGU_ADDRESS,
-            abi=OGUOGU_EVENT_ABI
-        )
+        self.transaction = transaction
+        self.challenge_created_event = transaction.oguogu_contract().events.ChallengeCreated()
         
     async def get_challenge(
         self, challenge_hash: str
@@ -55,7 +46,7 @@ class ChallengeRegistryService:
         logger.info(f"Creating challenge {challenge.hash} for {challenge.challenger_address}")
         
         await self.repository.create_challenge(challenge)
-        signature = create_signature(self.operator, challenge.hash)
+        signature = self.transaction.create_signature(challenge.hash)
         
         return ChallengeSignature(
             challenge_hash=challenge.hash,
@@ -68,15 +59,13 @@ class ChallengeRegistryService:
     ):
         """ 챌린지를 서버에 등록합니다. """
         logger.info(f"Opening challenge {transaction_hash}")
-        receipt = await self.wait_for_tx(transaction_hash)
         
-        for log in receipt['logs']:
-            try:
-                event = self.contract.events.ChallengeCreated().process_log(log)
-            except Exception as e:
-                logger.info(f"skip {log}")
-                continue
+        events = await self.transaction.aget_event_from_transcation(
+            transaction_hash,
+            self.challenge_created_event
+            )
 
+        for event in events:
             challenge_hash = Web3.to_hex(event['args']['challengeHash'])
             challenge = await self.repository.get_challenge(challenge_hash)
             
@@ -86,26 +75,6 @@ class ChallengeRegistryService:
             )
 
             await self.repository.open_challenge(challenge)
-        
-    async def wait_for_tx(
-        self, 
-        transaction_hash: str,
-        timeout: float = 30,
-        poll_latency: float = 1,
-    ) -> bool:
-        """ 트랜잭션 수행 후, 트랜잭션 수행 결과를 반환합니다 """
-        start_time = time.time()
-        while time.time() - start_time < timeout:
-            try:
-                receipt = await self.web3.eth.get_transaction_receipt(transaction_hash)
-                if receipt is not None:
-                    return receipt
-            except Exception:
-                continue
-            await asyncio.sleep(poll_latency)
-        
-        raise Exception(f"Timeout waiting for transaction receipt {transaction_hash}")
-        
         
         
         

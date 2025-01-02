@@ -3,6 +3,7 @@ from eth_account import Account
 
 from src.database.repository import ChallengeRepository
 from src.registry.challenge import ChallengeRegistryService
+from src.registry.container import RegistryContainer
 from src.utils import send_transaction
 from web3 import Web3
 from web3.contract import Contract
@@ -172,7 +173,7 @@ def local_settings(
 
 
 @pytest.fixture(scope='session')
-async def local_session_manager(local_settings: Settings):
+async def create_table_on_local_db(local_settings: Settings):
     session_manager = SessionManager(settings=local_settings)
 
     async with session_manager.connect() as conn:
@@ -186,17 +187,24 @@ async def local_session_manager(local_settings: Settings):
 
     
 @pytest.fixture(scope='session')
-async def local_database_container(local_session_manager: SessionManager):
+async def local_database_container(local_settings: Settings, create_table_on_local_db):
     container = DataBaseContainer(settings=local_settings)
-    container.session_manager.override(local_session_manager)
+    yield container
+    
+@pytest.fixture(scope='session')
+async def local_registry_container(local_settings: Settings, local_database_container: DataBaseContainer):
+    container = RegistryContainer(
+        settings=local_settings,
+        database=local_database_container
+    )
     yield container
 
 
 @pytest.fixture(scope='session')
-def challenge_repository(local_session_manager):
-    return ChallengeRepository(session_factory=local_session_manager.session)
+def challenge_repository(local_database_container):
+    return local_database_container.repository()
 
 
 @pytest.fixture(scope='session')
-def challenge_registry_service(challenge_repository: ChallengeRepository, local_settings: Settings):
-    return ChallengeRegistryService(challenge_repository, local_settings)
+def challenge_registry_service(local_registry_container):
+    return local_registry_container.registry()

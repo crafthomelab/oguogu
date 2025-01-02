@@ -143,7 +143,9 @@ class ChallengeProof:
     proof_date: datetime
     
     @staticmethod
-    def new(content: Dict[str, any], proof_date: datetime) -> "ChallengeProof":
+    def new(content: Dict[str, any], proof_date: datetime=None) -> "ChallengeProof":
+        if proof_date is None:
+            proof_date = datetime.now(pytz.utc)
         proof_hash = create_hash(**content)
         return ChallengeProof(
             proof_hash=Web3.to_hex(proof_hash), 
