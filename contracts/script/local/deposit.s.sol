@@ -22,7 +22,6 @@ contract DeployScript is Script {
         testUSDT = TestUSDT(address(0x5FbDB2315678afecb367f032d93F642f64180aa3));
 
         vm.startBroadcast(deployerPrivateKey);
-        
 
         testUSDT.mint(deployer, 100e6);
         testUSDT.mint(user, 100e6);
