@@ -1,5 +1,6 @@
 from dataclasses import dataclass
-from typing import Dict, List, Literal, Optional
+from decimal import Decimal
+from typing import Dict, List, Literal, Optional, Union
 from datetime import datetime
 import pytz
 from web3 import Web3
@@ -16,7 +17,7 @@ class Challenge:
     status: "ChallengeStatus"
     
     challenger_address: str
-    reward_amount: int
+    reward_amount: Union[int, Decimal]
     
     title: str
     type: Literal["photos"]
@@ -79,7 +80,7 @@ class Challenge:
         
         return Challenge(
             id=None,
-            hash=Web3.to_hex(challenge_hash),
+            hash=challenge_hash,
             status=ChallengeStatus.INIT,
             challenger_address=challenger_address,
             reward_amount=reward_amount,
@@ -160,7 +161,7 @@ class ChallengeProof:
             proof_date = datetime.now(pytz.utc)
         proof_hash = create_hash(**content)
         return ChallengeProof(
-            proof_hash=Web3.to_hex(proof_hash), 
+            proof_hash=proof_hash, 
             content=content,
             proof_date=proof_date
         )

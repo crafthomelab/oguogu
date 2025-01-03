@@ -80,7 +80,7 @@ async def test_submit_proof(
         proof_signature=proof_signature
     )
     # 10. 챌린지 완료하기
-    await challenge_reward_service.complete_challenge(output_challenge.id)
+    await challenge_reward_service.complete_challenge(output_challenge.hash)
     
     # 11. 챌린지 조회하기
     output_challenge = await challenge_registry_service.get_challenge(given_challenge.hash)

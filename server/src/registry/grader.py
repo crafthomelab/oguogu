@@ -1,14 +1,10 @@
-
-import base64
-from io import BytesIO
-from typing import Dict, Optional
+from typing import Dict
 from src.domains import Challenge
 from src.settings import Settings
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 from langchain_core.messages import SystemMessage
 from pydantic import BaseModel, Field   
-from PIL import Image
 import logging
 
 logger = logging.getLogger(__name__)
@@ -43,9 +39,10 @@ SYSTEM_PROMPT = """당신은 사용자가 챌린지를 수행했는지를 확인
 제목: <챌린지 제목>
 설명: <어떤 챌린지이며, 어떤 식으로 평가하면 되는지 서술>
 기간: <시작일자> ~ <종료일자>
+
 ----------
 증명 자료는 아래와 같은 포맷으로 제공됩니다.
-촬영 일자: <제공된 이미지의 EXIF 데이터 내 촬영 일자>
+촬영 일자: <제공된 이미지의 EXIF 데이터 내 촬영 일자, 이미지에 따라 제공되지 않을 수 있음>
 """
 
 class ProofGrader:
@@ -97,33 +94,11 @@ class ProofGrader:
         proof_content: Dict[str, any],
     ) -> ProofGraderResponse:
         logger.info(f"Grading proof for challenge {challenge.hash}")
-        content_type = proof_content["content_type"]
-        image_bytes = proof_content["image_bytes"]
-        
-        screenshot_date = extract_screenshot_date(image_bytes) 
         return await self.chain.ainvoke({
             "title": challenge.title,
             "description": challenge.description,
             "start_date": challenge.start_date.isoformat(),
             "end_date": challenge.end_date.isoformat(),
-            "screenshot_date": screenshot_date,
-            "image_url": encode_image_url(content_type, image_bytes)
+            "screenshot_date": proof_content["screenshot_date"],
+            "image_url": proof_content["image"]
         })
-        
-        
-def encode_image_url(
-    content_type: str,
-    image_bytes: bytes
-):
-    base64_image = base64.b64encode(image_bytes).decode('utf-8')
-    return f"data:{content_type};base64,{base64_image}"
-
-def extract_screenshot_date(
-    image_bytes: bytes
-) -> Optional[str]:
-    image = Image.open(BytesIO(image_bytes))
-    exif_data = image._getexif()
-    
-    if exif_data is not None:
-        # 촬영 시각 가져오기 (EXIF 태그 36867: DateTimeOriginal)
-        return exif_data.get(36867)

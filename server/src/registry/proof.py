@@ -1,6 +1,7 @@
 from typing import Dict
 from src.database.repository import ChallengeRepository
 from src.domains import Challenge, ChallengeProof
+from src.exceptions import ClientException
 from src.registry.grader import ProofGrader
 from src.registry.transaction import TransactionManager
 from src.utils import create_hash, verify_signature
@@ -27,7 +28,7 @@ class ProofRegistryService:
         self.repository = repository
         self.transaction = transaction
         self.grader = grader
-        self.submit_proof_function = transaction.oguogu_contract().functions.submitProof
+        self.submit_proof_function = transaction.oguogu_contract().functions.submitProof        
         
     def calculate_proof_hash(
         self,
@@ -45,7 +46,7 @@ class ProofRegistryService:
     ) -> str:
         """ 챌린지 수행 증명을 검증합니다. """
         if not challenge.available_to_submit_proof():
-            raise Exception("도전할 수 없는 챌린지입니다.")
+            raise ClientException(message="도전할 수 없는 챌린지에요.")
         
         proof_hash = self.calculate_proof_hash(proof_content)
 
@@ -54,11 +55,11 @@ class ProofRegistryService:
             proof_signature,
             proof_hash, 
         ):
-            raise Exception("잘못된 서명입니다.")
+            raise ClientException(message="잘못된 서명이에요.")
         
         response = await self.grader.grade_proof(challenge, proof_content)
         if not response.is_correct:
-            raise Exception(response.message)
+            raise ClientException(message=response.message)
         
         return response.message
         

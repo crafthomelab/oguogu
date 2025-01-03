@@ -1,0 +1,8 @@
+version: '3.8'
+
+services:
+  db:
+    container_name: oguogu-database
+    env_file:
+      - .env.local
+
