@@ -1,13 +1,22 @@
 from datetime import datetime
-from typing import List, Optional
-from fastapi import APIRouter, Depends, Form, Query, UploadFile
-from dependency_injector.wiring import inject, Provide
+from typing import Annotated, List, Optional
+from eth_typing import ChecksumAddress
+from fastapi import APIRouter, Depends, Form, UploadFile
+from dependency_injector.wiring import Provide
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from src.container import AppContainer
 from src.domains import Challenge, ChallengeProof, ChallengeSignature
 from src.registry.challenge import ChallengeRegistryService
 from pydantic import BaseModel, Field
 from src.registry.proof import ProofRegistryService
 from src.registry.reward import ChallengeRewardService
+from src.utils import recover_address
+
+
+RegistryDependency = Depends(Provide[AppContainer.registry.registry])
+ProofDependency = Depends(Provide[AppContainer.registry.proof])
+RewardDependency = Depends(Provide[AppContainer.registry.reward])
+
 
 class ChallengeDTO(BaseModel):
     """ Challenge DTO """
@@ -112,27 +121,36 @@ class ProofHashDTO(BaseModel):
 
 router = APIRouter()
 
+security = HTTPBearer()
+
 
 @router.get("/")
 async def read_root():
     return {"message": "Oguogu API Server"}
 
 
+def authenticate_by_signature(
+    credentials: Annotated[HTTPAuthorizationCredentials, Depends(security)]
+) -> ChecksumAddress:
+    token = credentials.credentials
+    message, signature = token.split(":")
+    return recover_address(message, signature)
 
-@router.get("/{user_address}/challenges/{challenge_hash}")
+
+@router.get("/challenges/{challenge_hash}")
 async def get_challenge(
-    user_address: str,
+    user_address: Annotated[ChecksumAddress, Depends(authenticate_by_signature)],
     challenge_hash: str,
-    registry: ChallengeRegistryService = Depends(Provide[AppContainer.registry.registry])
+    registry: ChallengeRegistryService = RegistryDependency
 ) -> ChallengeDTO:
-    challenge = await registry.get_challenge_by_hash(challenge_hash)
+    challenge = await registry.get_user_challenge(user_address, challenge_hash)
     return ChallengeDTO.from_domain(challenge)
 
 
-@router.get("/{user_address}/challenges")
+@router.get("/challenges")
 async def get_challenges(
-    user_address: str,
-    registry: ChallengeRegistryService = Depends(Provide[AppContainer.registry.registry])
+    user_address: Annotated[ChecksumAddress, Depends(authenticate_by_signature)],
+    registry: ChallengeRegistryService = RegistryDependency
 ) -> List[ChallengeDTO]:
     challenges = await registry.get_active_challenges(user_address)
     return [
@@ -141,9 +159,9 @@ async def get_challenges(
 
 @router.post("/{user_address}/challenges")
 async def create_challenge(
-    user_address: str,
+    user_address: Annotated[ChecksumAddress, Depends(authenticate_by_signature)],
     challenge: ChallengeCreateDTO,
-    registry: ChallengeRegistryService = Depends(Provide[AppContainer.registry.registry])
+    registry: ChallengeRegistryService = RegistryDependency
 ) -> ChallengeSignatureDTO:
     challenge = Challenge.new(
         challenger_address=user_address,
@@ -160,40 +178,36 @@ async def create_challenge(
     return ChallengeSignatureDTO.from_domain(signature)
 
 
-@router.post("/{user_address}/challenges/{challenge_hash}/register")
+@router.post("/challenges/{challenge_hash}/register")
 async def register_challenge(
-    user_address: str,
     challenge_hash: str,
     request: ChallengeRegisterDTO,
-    registry: ChallengeRegistryService = Depends(Provide[AppContainer.registry.registry])
+    registry: ChallengeRegistryService = RegistryDependency
 ) -> OkResponse:
     await registry.register_challenge(request.transaction_hash)
     return OkResponse(ok=True)
 
-@router.post("/{user_address}/challenges/{challenge_hash}/proof/hash")
+
+@router.post("/photo-proof/hash")
 async def calculate_proof_hash(
-    user_address: str,
-    challenge_hash: str,
     proof_file: UploadFile,
-    proof: ProofRegistryService = Depends(Provide[AppContainer.registry.proof])
-) -> OkResponse:
+    proof: ProofRegistryService = ProofDependency
+) -> ProofHashDTO:
     proof_content = {   
         "content_type": "image/jpeg",
         "image_bytes": await proof_file.read(),
     }
-    proof_hash = proof.calculate_proof_hash(proof_content)
-    
+    proof_hash = proof.calculate_proof_hash(proof_content)    
     return ProofHashDTO(proof_hash=proof_hash)
 
 
-@router.post("/{user_address}/challenges/{challenge_hash}/proof/photos")
+@router.post("/challenges/{challenge_hash}/photo-proof")
 async def submit_photo_proof(
-    user_address: str,
     challenge_hash: str,
     proof_file: UploadFile,
     proof_signature: str = Form(..., description="Proof Signature"),
-    registry: ChallengeRegistryService = Depends(Provide[AppContainer.registry.registry]),
-    proof: ProofRegistryService = Depends(Provide[AppContainer.registry.proof])
+    registry: ChallengeRegistryService = RegistryDependency,
+    proof: ProofRegistryService = ProofDependency
 ) -> OkResponse:
     challenge = await registry.get_challenge_by_hash(challenge_hash)
     proof_content = {   
@@ -206,11 +220,10 @@ async def submit_photo_proof(
     return OkResponse(ok=True)
 
 
-@router.post("/{user_address}/challenges/{challenge_hash}/complete")
+@router.post("/challenges/{challenge_hash}/complete")
 async def complete_challenge(
-    user_address: str,
     challenge_hash: str,
-    reward: ChallengeRewardService = Depends(Provide[AppContainer.registry.reward])
+    reward: ChallengeRewardService = RewardDependency
 ) -> ChallengeDTO:
     challenge = await reward.complete_challenge(challenge_hash)
     return ChallengeDTO.from_domain(challenge)

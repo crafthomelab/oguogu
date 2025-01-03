@@ -32,6 +32,9 @@ contract DeployScript is Script {
 
         oguogu = OGUOGU(address(proxy));
 
+        console.log("USDT address:", address(testUSDT));
+        console.log("OGUOGU address:", address(proxy));
+
         vm.stopBroadcast();
     }
 }

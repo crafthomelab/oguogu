@@ -23,17 +23,25 @@ def create_signature(signer: Account, hash_value: Union[bytes, str]) -> HexBytes
     return signer.sign_message(message).signature
 
 
+def recover_address(message: bytes, signature: bytes) -> str:
+    if isinstance(message, str):
+        message = encode_defunct(hexstr=message)
+    else:
+        message = encode_defunct(message)
+
+    if isinstance(signature, str):
+        signature = HexBytes(signature)
+
+    return Account.recover_message(message, signature=signature)
+
+
 def verify_signature(
     signer_address: str, 
     signature: bytes, 
     hash_value: bytes
 ) -> bool:
     """ 서명을 검증합니다 """
-    message = encode_defunct(hash_value)
-    if isinstance(signature, str):
-        signature = HexBytes(signature)
-    recovered_address = Account.recover_message(message, signature=signature)
-    return Web3.to_checksum_address(recovered_address) == Web3.to_checksum_address(signer_address)
+    return recover_address(hash_value, signature) == signer_address
 
 
 def verify_hash(challenge_data: Dict[str, Any], hash: bytes) -> bool:

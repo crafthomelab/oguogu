@@ -1,4 +1,5 @@
 from typing import List
+from eth_typing import ChecksumAddress
 from src.database.repository import ChallengeRepository
 from src.domains import Challenge, ChallengeSignature, ChallengeStatus
 from src.registry.transaction import TransactionManager
@@ -30,6 +31,16 @@ class ChallengeRegistryService:
         self.repository = repository
         self.transaction = transaction
         self.challenge_created_event = transaction.oguogu_contract().events.ChallengeCreated()
+        
+    async def get_user_challenge(
+        self, 
+        user_address: ChecksumAddress,
+        challenge_hash: str
+    ) -> Challenge:
+        challenge = await self.repository.get_challenge(challenge_hash)
+        if challenge is None or challenge.challenger_address != user_address:
+            raise Exception(f"Challenge {challenge_hash} not found")
+        return challenge
         
     async def get_challenge(
         self, challenge_hash: str
