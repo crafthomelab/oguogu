@@ -21,12 +21,12 @@ contract DeployScript is Script {
 
         oguogu = OGUOGU(address(0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9));
         testUSDT = TestUSDT(address(0x5FbDB2315678afecb367f032d93F642f64180aa3));
-        
+
         vm.startBroadcast(userPrivateKey);
 
         testUSDT.approve(address(oguogu), 1e6);
         oguogu.depositReward(user, 1e6);
-        
+
         oguogu.createChallenge(
             1e6,
             0x97a13132222bfbf62837aae6d3aca0d927c1e4535fbeb4935f15cbdabb376238,

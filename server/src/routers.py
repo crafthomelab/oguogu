@@ -223,7 +223,7 @@ async def submit_photo_proof(
     registry: ChallengeRegistryService = RegistryDependency,
     proof: ProofRegistryService = ProofDependency
 ) -> OkResponse:
-    challenge = await registry.get_challenge_by_hash(challenge_hash)
+    challenge = await registry.get_challenge(challenge_hash)
     proof_content = {   
         "content_type": "image/jpeg",
         "image_bytes": await proof_file.read(),

@@ -11,7 +11,7 @@ def create_hash(**kwargs) -> bytes:
     """ 챌린지 해시를 생성합니다 """
     data_string = ''.join(f'{key}:{value}' for key, value in sorted(kwargs.items()))
     data_bytes = data_string.encode('utf-8')
-    return to_bytes32(Web3.keccak(data_bytes))
+    return Web3.to_hex(to_bytes32(Web3.keccak(data_bytes)))
 
 
 def create_signature(signer: Account, hash_value: Union[bytes, str]) -> HexBytes:
@@ -30,7 +30,6 @@ def recover_address(message: bytes, signature: bytes) -> str:
         message = encode_defunct(text=message)
     else:
         message = encode_defunct(message)
-    print("message: ", message)
 
     if isinstance(signature, str):
         signature = HexBytes(signature)

@@ -79,7 +79,7 @@ class Challenge:
         
         return Challenge(
             id=None,
-            hash=Web3.to_hex(challenge_hash),
+            hash=challenge_hash,
             status=ChallengeStatus.INIT,
             challenger_address=challenger_address,
             reward_amount=reward_amount,
@@ -160,7 +160,7 @@ class ChallengeProof:
             proof_date = datetime.now(pytz.utc)
         proof_hash = create_hash(**content)
         return ChallengeProof(
-            proof_hash=Web3.to_hex(proof_hash), 
+            proof_hash=proof_hash, 
             content=content,
             proof_date=proof_date
         )
