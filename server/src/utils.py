@@ -24,10 +24,13 @@ def create_signature(signer: Account, hash_value: Union[bytes, str]) -> HexBytes
 
 
 def recover_address(message: bytes, signature: bytes) -> str:
-    if isinstance(message, str):
+    if isinstance(message, str) and message.startswith("0x"):
         message = encode_defunct(hexstr=message)
+    elif isinstance(message, str):
+        message = encode_defunct(text=message)
     else:
         message = encode_defunct(message)
+    print("message: ", message)
 
     if isinstance(signature, str):
         signature = HexBytes(signature)

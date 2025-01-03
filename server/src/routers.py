@@ -1,8 +1,8 @@
 from datetime import datetime
-from typing import Annotated, List, Optional
+from typing import Annotated, List, Literal, Optional
 from eth_typing import ChecksumAddress
 from fastapi import APIRouter, Depends, Form, UploadFile
-from dependency_injector.wiring import Provide
+from dependency_injector.wiring import Provide, inject
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from src.container import AppContainer
 from src.domains import Challenge, ChallengeProof, ChallengeSignature
@@ -18,6 +18,16 @@ ProofDependency = Depends(Provide[AppContainer.registry.proof])
 RewardDependency = Depends(Provide[AppContainer.registry.reward])
 
 
+class ChallengeListDTO(BaseModel):
+    """ Challenge List DTO """
+    challenges: List['ChallengeDTO'] = Field(description="Challenges")
+    
+    @staticmethod
+    def from_domain(challenges: List[Challenge]) -> 'ChallengeListDTO':
+        return ChallengeListDTO(
+            challenges=[ChallengeDTO.from_domain(challenge) for challenge in challenges]
+        )
+
 class ChallengeDTO(BaseModel):
     """ Challenge DTO """
     hash: str = Field(description="Challenge Hash")
@@ -28,12 +38,12 @@ class ChallengeDTO(BaseModel):
     reward_amount: str = Field(description="Reward Amount")
     
     title: str = Field(description="Challenge Title")
-    type: str = Field(description="Challenge Type")
+    type: Literal["photos"] = Field(description="Challenge Type")
     description: str = Field(description="Challenge Description")
     
     start_date: datetime = Field(description="Challenge Start Date")
     end_date: datetime = Field(description="Challenge End Date")
-    minimum_proof_count: int = Field(description="Minimum Proof Count")
+    minimum_proof_count: int = Field(description="Minimum Proof Count", examples=[3])
     
     receipent_address: str = Field(description="Receipent Address")
     proofs: List['ProofDTO'] = Field(description="Proofs")
@@ -138,6 +148,7 @@ def authenticate_by_signature(
 
 
 @router.get("/challenges/{challenge_hash}")
+@inject
 async def get_challenge(
     user_address: Annotated[ChecksumAddress, Depends(authenticate_by_signature)],
     challenge_hash: str,
@@ -148,16 +159,16 @@ async def get_challenge(
 
 
 @router.get("/challenges")
+@inject
 async def get_challenges(
     user_address: Annotated[ChecksumAddress, Depends(authenticate_by_signature)],
     registry: ChallengeRegistryService = RegistryDependency
-) -> List[ChallengeDTO]:
+) -> ChallengeListDTO:
     challenges = await registry.get_active_challenges(user_address)
-    return [
-        ChallengeDTO.from_domain(challenge) for challenge in challenges
-    ]
+    return ChallengeListDTO.from_domain(challenges)
 
-@router.post("/{user_address}/challenges")
+@router.post("/challenges")
+@inject
 async def create_challenge(
     user_address: Annotated[ChecksumAddress, Depends(authenticate_by_signature)],
     challenge: ChallengeCreateDTO,
@@ -179,6 +190,7 @@ async def create_challenge(
 
 
 @router.post("/challenges/{challenge_hash}/register")
+@inject
 async def register_challenge(
     challenge_hash: str,
     request: ChallengeRegisterDTO,
@@ -189,6 +201,7 @@ async def register_challenge(
 
 
 @router.post("/photo-proof/hash")
+@inject
 async def calculate_proof_hash(
     proof_file: UploadFile,
     proof: ProofRegistryService = ProofDependency
@@ -202,6 +215,7 @@ async def calculate_proof_hash(
 
 
 @router.post("/challenges/{challenge_hash}/photo-proof")
+@inject
 async def submit_photo_proof(
     challenge_hash: str,
     proof_file: UploadFile,
@@ -221,6 +235,7 @@ async def submit_photo_proof(
 
 
 @router.post("/challenges/{challenge_hash}/complete")
+@inject
 async def complete_challenge(
     challenge_hash: str,
     reward: ChallengeRewardService = RewardDependency

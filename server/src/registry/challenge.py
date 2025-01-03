@@ -54,9 +54,11 @@ class ChallengeRegistryService:
         self,
         user_address: str,
     ) -> List[Challenge]:
-        challenges = await self.repository.get_challenges_by_challenger(
+        challenges = await self.repository.get_challeges_by_challenger(
             user_address, 
-            [ChallengeStatus.OPEN, ChallengeStatus.SUCCESS, ChallengeStatus.FAILED]
+            [ChallengeStatus.OPEN, 
+             ChallengeStatus.SUCCESS, 
+             ChallengeStatus.FAILED]
         )
         return sorted(
             challenges, 

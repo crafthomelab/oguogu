@@ -54,6 +54,7 @@ class ChallengeRepository:
             )
             
             if statuses is not None:
+                statuses = [status.value for status in statuses]
                 stmt = stmt.where(ChallengeEntity.status.in_(statuses))
             
             result = await session.execute(stmt)
