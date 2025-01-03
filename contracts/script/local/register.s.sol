@@ -20,19 +20,14 @@ contract DeployScript is Script {
         address receipent = 0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC;
 
         oguogu = OGUOGU(address(0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9));
-        testUSDT = TestUSDT(address(0x5FbDB2315678afecb367f032d93F642f64180aa3));
 
         vm.startBroadcast(userPrivateKey);
-
-        testUSDT.approve(address(oguogu), 1e6);
-        oguogu.depositReward(user, 1e6);
-
         oguogu.createChallenge(
             1e6,
-            0x97a13132222bfbf62837aae6d3aca0d927c1e4535fbeb4935f15cbdabb376238,
-            hex"19ee2a9db40504b6ba6a5175809d4e9e8e62a8d3336fb80321b58eb91210050330e46dd29dae9d5e7482526be1c4bd15cf5e9bb1c37ec5cdf8bd1be55399c1671c",
+            0x7f52a3e131e6a2195be7e3cc2c45b2a80f7f07b05e1380425892f0db175930d8,
+            hex"eca376023490e92f3754c5de4c787bc72e62a83f89f433502b936b14ae6eb84743e3ae7fbe5ebd2276384baa853a346dfaa9bc941d5bcb683a95cd31bce0629a1c",
             1736434800,
-            3,
+            1,
             receipent
         );
 

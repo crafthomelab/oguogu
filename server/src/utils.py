@@ -6,7 +6,6 @@ from eth_account import Account
 from eth_account.messages import encode_defunct
 from web3.contract.contract import ContractFunction
 from web3.types import TxReceipt
-import base64
 from typing import Optional
     
 def create_hash(**kwargs) -> bytes:
