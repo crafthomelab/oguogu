@@ -10,7 +10,7 @@ from src.registry.challenge import ChallengeRegistryService
 from pydantic import BaseModel, Field
 from src.registry.proof import ProofRegistryService
 from src.registry.reward import ChallengeRewardService
-from src.utils import recover_address
+from src.utils import generate_image_proof, recover_address
 
 
 RegistryDependency = Depends(Provide[AppContainer.registry.registry])
@@ -59,7 +59,7 @@ class ChallengeDTO(BaseModel):
             id=challenge.id,
             status=challenge.status.value,
             challenger_address=challenge.challenger_address,
-            reward_amount=str(challenge.reward_amount),
+            reward_amount=str(int(challenge.reward_amount)),
             title=challenge.title,
             type=challenge.type,
             description=challenge.description,
@@ -69,7 +69,7 @@ class ChallengeDTO(BaseModel):
             receipent_address=challenge.receipent_address,
             proofs=[ProofDTO.from_domain(proof) for proof in challenge.proofs],
             payment_transaction=challenge.payment_transaction,
-            payment_reward=str(challenge.payment_reward),
+            payment_reward=str(int(challenge.payment_reward)),
             complete_date=challenge.complete_date,
         )
 
@@ -80,7 +80,8 @@ class ProofDTO(BaseModel):
     proof_date: datetime = Field(description="Proof Date")
 
     content_type: Optional[str] = Field(description="Content Type")
-    image_bytes: Optional[str] = Field(description="base64 encoded JPEG image")
+    image: Optional[str] = Field(description="base64 encoded JPEG image")
+    screenshot_date: Optional[str] = Field(description="Screenshot Date")
     
     @staticmethod
     def from_domain(proof: ChallengeProof) -> 'ProofDTO':
@@ -88,7 +89,8 @@ class ProofDTO(BaseModel):
             proof_hash=proof.proof_hash,
             proof_date=proof.proof_date,
             content_type=proof.content.get("content_type"),
-            image_bytes=proof.content.get("image_bytes"),
+            image=proof.content.get("image"),
+            screenshot_date=proof.content.get("screenshot_date"),
         )
 
 
@@ -206,10 +208,7 @@ async def calculate_proof_hash(
     proof_file: UploadFile,
     proof: ProofRegistryService = ProofDependency
 ) -> ProofHashDTO:
-    proof_content = {   
-        "content_type": "image/jpeg",
-        "image_bytes": await proof_file.read(),
-    }
+    proof_content = await generate_image_proof(proof_file)
     proof_hash = proof.calculate_proof_hash(proof_content)    
     return ProofHashDTO(proof_hash=proof_hash)
 
@@ -224,10 +223,8 @@ async def submit_photo_proof(
     proof: ProofRegistryService = ProofDependency
 ) -> OkResponse:
     challenge = await registry.get_challenge(challenge_hash)
-    proof_content = {   
-        "content_type": "image/jpeg",
-        "image_bytes": await proof_file.read(),
-    }
+    
+    proof_content = await generate_image_proof(proof_file)
     await proof.verify_proof(challenge, proof_content, proof_signature)
     await proof.submit_proof(challenge, proof_content, proof_signature)
     

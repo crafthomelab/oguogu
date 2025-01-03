@@ -1,11 +1,13 @@
 from typing import Any, Dict, Union
+from fastapi import UploadFile
 from hexbytes import HexBytes
 from web3 import Web3, AsyncWeb3
 from eth_account import Account
 from eth_account.messages import encode_defunct
 from web3.contract.contract import ContractFunction
 from web3.types import TxReceipt
-
+import base64
+from typing import Optional
     
 def create_hash(**kwargs) -> bytes:
     """ 챌린지 해시를 생성합니다 """
@@ -91,3 +93,33 @@ async def asend_transaction(
         raise Exception(f"Failed to send transaction.. status: {tx_receipt.status} tx_hash: {txn_hash}")
     
     return tx_receipt
+
+
+async def generate_image_proof(proof_file: UploadFile) -> dict:
+    content_type = proof_file.content_type
+    image_bytes = await proof_file.read()
+    image = encode_image_url(content_type, image_bytes)
+    screenshot_date = extract_screenshot_date(image_bytes)
+    return {
+        "image": image,
+        "content_type": content_type,
+        "screenshot_date": screenshot_date
+    }
+
+
+def extract_screenshot_date(image_bytes: bytes) -> Optional[str]:
+    from PIL import Image
+    from io import BytesIO
+    
+    image = Image.open(BytesIO(image_bytes))
+    exif_data = image._getexif()
+    if exif_data is not None:
+        return exif_data.get(36867)
+
+def encode_image_url(
+    content_type: str,
+    image_bytes: bytes
+):
+    import base64
+    base64_image = base64.b64encode(image_bytes).decode('utf-8')
+    return f"data:{content_type};base64,{base64_image}"

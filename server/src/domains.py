@@ -1,5 +1,6 @@
 from dataclasses import dataclass
-from typing import Dict, List, Literal, Optional
+from decimal import Decimal
+from typing import Dict, List, Literal, Optional, Union
 from datetime import datetime
 import pytz
 from web3 import Web3
@@ -16,7 +17,7 @@ class Challenge:
     status: "ChallengeStatus"
     
     challenger_address: str
-    reward_amount: int
+    reward_amount: Union[int, Decimal]
     
     title: str
     type: Literal["photos"]
