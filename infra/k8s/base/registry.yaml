@@ -81,14 +81,14 @@ spec:
           
       containers:
         - name: registry
-          image: registry:2
+          image: registry:2.8.3
           ports:
             - containerPort: 5000
           volumeMounts:
             - name: registry-config-volume
               mountPath: /etc/docker/registry
             - name: auth
-              mountPath: "/auth"              
+              mountPath: "/auth"                       
           env:
             - name: REGISTRY_AUTH
               value: "htpasswd"
@@ -102,5 +102,5 @@ spec:
             secretName: registry-secret
         - name: auth
           secret:
-            secretName: registry-htpasswd
+            secretName: registry-htpasswd       
 
