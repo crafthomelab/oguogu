@@ -3,3 +3,6 @@
 
 .env
 .env.local
+
+infra/answer.txt
+**/*-secret.yaml
