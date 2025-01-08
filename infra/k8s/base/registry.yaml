@@ -1,0 +1,90 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: registry-service
+  namespace: common
+  labels:
+    app: registry
+spec:
+  type: ClusterIP
+  ports:
+    - port: 5000
+      targetPort: 5000
+      protocol: TCP
+      name: http
+  selector:
+    app: registry
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: registry-ingress
+  namespace: common
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`registry.crafthomelab.com`) && PathPrefix(`/`)
+      kind: Rule
+      services:
+        - name: registry-service
+          port: 5000
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: registry-deployment
+  namespace: common
+  labels:
+    app: registry
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: registry
+  template:
+    metadata:
+      labels:
+        app: registry
+    spec:
+      initContainers:
+        - name: create-buckets
+          image: minio/mc:latest
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              mc alias set myminio http://minio-service:9000 $MINIO_ACCESS_KEY $MINIO_SECRET_KEY;
+              mc mb myminio/container-registry --ignore-existing;
+          envFrom:
+            - secretRef:
+                name: minio-secret
+          
+    
+      containers:
+        - name: registry
+          image: registry:2
+          ports:
+            - containerPort: 5000
+          volumeMounts:
+            - name: registry-config-volume
+              mountPath: /etc/docker/registry
+            - name: auth
+              mountPath: "/auth"              
+          env:
+            - name: REGISTRY_AUTH
+              value: "htpasswd"
+            - name: REGISTRY_AUTH_HTPASSWD_PATH
+              value: "/auth/htpasswd"
+            - name: REGISTRY_AUTH_HTPASSWD_REALM
+              value: "Registry Realm"
+      volumes:
+        - name: registry-config-volume
+          secret:
+            secretName: registry-secret
+        - name: auth
+          secret:
+            secretName: registry-htpasswd
+
