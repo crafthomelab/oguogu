@@ -64,3 +64,9 @@ $ forge --help
 $ anvil --help
 $ cast --help
 ```
+
+### 배포 현황
+
+-   Sepolia
+    -   OGUOGU: 0x9851F0B8d1e8f582375A0F46FeDBb3cB2b893324
+    -   USDT: 0x147f43c18A72E9fc0665894dAD910A62D9391677
