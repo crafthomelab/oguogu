@@ -7,4 +7,5 @@ resources:
   - minio-sealedsecret.yaml
   - registry-sealedsecret.yaml
   - htpasswd-sealedsecret.yaml
-
+  - cloudflare-sealedsecret.yaml
+  - cluster-issuer.yaml
