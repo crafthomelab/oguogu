@@ -24,7 +24,7 @@ metadata:
   namespace: common
 spec:
   entryPoints:
-    - websecure
+    - websecure    
   routes:
     - match: Host(`registry.crafthomelab.com`) && PathPrefix(`/`)
       kind: Rule
@@ -67,26 +67,14 @@ spec:
       labels:
         app: registry
     spec:
-      initContainers:
-        - name: create-buckets
-          image: minio/mc:latest
-          command: ["/bin/sh", "-c"]
-          args:
-            - |
-              mc alias set myminio http://minio-service:9000 $MINIO_ACCESS_KEY $MINIO_SECRET_KEY;
-              mc mb myminio/container-registry --ignore-existing;
-          envFrom:
-            - secretRef:
-                name: minio-secret
-          
       containers:
         - name: registry
           image: registry:2.8.3
           ports:
             - containerPort: 5000
           volumeMounts:
-            - name: registry-config-volume
-              mountPath: /etc/docker/registry
+            - name: registry-storage
+              mountPath: "/var/lib/registry"
             - name: auth
               mountPath: "/auth"                       
           env:
@@ -97,10 +85,23 @@ spec:
             - name: REGISTRY_AUTH_HTPASSWD_REALM
               value: "Registry Realm"
       volumes:
-        - name: registry-config-volume
-          secret:
-            secretName: registry-secret
+        - name: registry-storage
+          persistentVolumeClaim:
+            claimName: registry-pvc
         - name: auth
           secret:
             secretName: registry-htpasswd       
 
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: registry-pvc
+  namespace: common
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 32Gi
+  storageClassName: local-path
