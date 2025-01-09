@@ -3,14 +3,11 @@ FROM python:3.12-slim AS builder
 WORKDIR /app
 
 COPY pyproject.toml poetry.lock ./
-RUN poetry install --no-root
+RUN pip install poetry && poetry config virtualenvs.create false && poetry install
 
-COPY . .
+COPY src ./src
 
-FROM python:3.12-slim
+EXPOSE 8000
 
-WORKDIR /app
-
-COPY --from=builder /app /app
-
-CMD ["poetry", "run", "fastapi", "run", "main.py"]
+ENTRYPOINT ["python", "-m", "uvicorn", "src.app:app"]
+CMD ["--host", "0.0.0.0", "--port", "8000"]

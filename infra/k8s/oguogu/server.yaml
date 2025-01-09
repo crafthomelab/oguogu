@@ -1,0 +1,98 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oguogu-server
+  namespace: oguogu
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: oguogu-server
+  template:
+    metadata:
+      labels:
+        app: oguogu-server
+    spec:
+      containers:
+        - name: oguogu-server
+          image: registry.crafthomelab.com/oguogu-server
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: database-secret
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: database-secret
+                  key: POSTGRES_PASSWORD
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: database-secret
+                  key: POSTGRES_DB
+          envFrom:
+            - secretRef:
+                name: oguogu-secret
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: oguogu-server
+  namespace: oguogu
+spec:
+  ports:
+    - port: 8000
+      targetPort: 8000
+  selector:
+    app: oguogu-server
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: oguogu-server-ingress
+  namespace: oguogu
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`oguogu.crafthomelab.com`) && PathPrefix(`/`)
+      kind: Rule
+      services:
+        - name: oguogu-server
+          port: 8000     
+  tls:
+    secretName: oguogu-server-cert-tls
+
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: oguogu-server-cert
+  namespace: oguogu
+spec:
+  commonName: oguogu.crafthomelab.com
+  dnsNames:
+    - oguogu.crafthomelab.com
+  secretName: oguogu-server-cert-tls
+  issuerRef:
+    name: letsencrypt-issuer
+    kind: ClusterIssuer
