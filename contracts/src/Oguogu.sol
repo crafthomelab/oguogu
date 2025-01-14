@@ -144,8 +144,7 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
         bytes memory challengeSignature,
         uint256 startDate,
         uint256 endDate,
-        uint64 minimumProofCount,
-        address receipent
+        uint64 minimumProofCount
     ) external returns (uint256) {
         /**
          * @notice Creates a new challenge(NFT).
@@ -158,7 +157,6 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
          *
          * @dev The challengeHash is used as the ID of the challenge in the OguOgu system. Therefore, it must be unique.
          */
-        require(receipent != address(0), "Invalid receipent address");
         require(reward > 0, "Invalid reward");
         require(startDate < endDate, "Invalid start date");
         require(block.timestamp < endDate, "Invalid end date");
@@ -221,17 +219,23 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
         /**
          * @notice Completes the challenge and distributes the reward.
          * 
-         * @dev If the challenge fails, the reward is added to the deposit rewards.
+         * @dev If the challenge fails, the reward is remained in the challenger's reserve.
+         *      The recipient is set to the challenger if the caller is not the challenger.
          *
-         * @param recipient The address to receive the reward.
+         * @param recipient The address to receive the reward
          * @param tokenId The ID of the challenge.
          */
+        address challenger = ownerOf(tokenId);
+        if (msg.sender != challenger) {
+            receipent = challenger;
+        }
+        
         ChallengeStatus status = getChallengeStatus(tokenId);
         Challenge memory challenge = _challenges[tokenId];
         require(status != ChallengeStatus.OPEN, "Challenge is not closed");
         require(!challenge.isClosed, "Challenge is already closed");
 
-        address challenger = ownerOf(tokenId);
+        
         _challenges[tokenId].isClosed = true;
         userAllocatedRewards[challenger] -= challenge.reward;
 

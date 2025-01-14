@@ -23,13 +23,12 @@ contract DeployScript is Script {
 
         vm.startBroadcast(deployerPrivateKey);
         
-        payable(address(0xd6f34075965Ae85763829850E222Fea6d70C075E)).transfer(100e18);
-        testUSDT.mint(deployer, 100e6);
+        payable(user).transfer(100e18);
+        
         testUSDT.mint(user, 100e6);
 
-
-        testUSDT.approve(address(oguogu), 100e6);
-        oguogu.depositReward(user, 100e6);
+        testUSDT.transfer(address(oguogu), 100e6);
+        oguogu.depositReward(user);
 
         vm.stopBroadcast();
     }

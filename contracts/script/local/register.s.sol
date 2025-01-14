@@ -26,9 +26,9 @@ contract DeployScript is Script {
             1e6,
             0x7f52a3e131e6a2195be7e3cc2c45b2a80f7f07b05e1380425892f0db175930d8,
             hex"eca376023490e92f3754c5de4c787bc72e62a83f89f433502b936b14ae6eb84743e3ae7fbe5ebd2276384baa853a346dfaa9bc941d5bcb683a95cd31bce0629a1c",
-            1736434800,
-            1,
-            receipent
+            block.timestamp,
+            block.timestamp + 1 days,
+            1
         );
 
         vm.stopBroadcast();
