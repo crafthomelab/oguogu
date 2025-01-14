@@ -20,19 +20,16 @@ class ChallengeEntity(Base):
     hash: Mapped[str] = mapped_column(String, primary_key=True)
     id: Mapped[int] = mapped_column(Integer, nullable=True)
     status: Mapped[str] = mapped_column(String)
-
+    nonce: Mapped[int] = mapped_column(Integer)
     challenger_address: Mapped[str] = mapped_column(String)
     reward_amount: Mapped[int] = mapped_column(Numeric(precision=78, scale=0))
 
     title: Mapped[str] = mapped_column(String)
     type: Mapped[str] = mapped_column(String)
-    description: Mapped[str] = mapped_column(String)
     
     start_date: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     end_date: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     minimum_proof_count: Mapped[int] = mapped_column(Integer)
-
-    receipent_address: Mapped[str] = mapped_column(String)
     
     payment_transaction: Mapped[str] = mapped_column(String, nullable=True)
     payment_reward: Mapped[int] = mapped_column(Integer)
@@ -49,16 +46,15 @@ class ChallengeEntity(Base):
         return ChallengeEntity(
             hash=domain.hash,
             id=domain.id,
+            nonce=domain.nonce,
             status=domain.status.value,
             challenger_address=domain.challenger_address,
             reward_amount=domain.reward_amount,
             title=domain.title,
             type=domain.type,
-            description=domain.description,
             start_date=domain.start_date,
             end_date=domain.end_date,
             minimum_proof_count=domain.minimum_proof_count,
-            receipent_address=domain.receipent_address,
             payment_transaction=domain.payment_transaction,
             payment_reward=domain.payment_reward,
             complete_date=domain.complete_date,
@@ -68,16 +64,15 @@ class ChallengeEntity(Base):
         return Challenge(
             hash=self.hash,
             id=self.id,
+            nonce=self.nonce,
             status=ChallengeStatus(self.status),
             challenger_address=self.challenger_address,
             reward_amount=self.reward_amount,
             title=self.title,
             type=self.type,
-            description=self.description,
             start_date=self.start_date,
             end_date=self.end_date,
             minimum_proof_count=self.minimum_proof_count,
-            receipent_address=self.receipent_address,
             payment_transaction=self.payment_transaction,
             payment_reward=self.payment_reward,
             complete_date=self.complete_date,

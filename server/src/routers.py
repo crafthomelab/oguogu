@@ -39,13 +39,11 @@ class ChallengeDTO(BaseModel):
     
     title: str = Field(description="Challenge Title")
     type: Literal["photos"] = Field(description="Challenge Type")
-    description: str = Field(description="Challenge Description")
     
     start_date: datetime = Field(description="Challenge Start Date")
     end_date: datetime = Field(description="Challenge End Date")
     minimum_proof_count: int = Field(description="Minimum Proof Count", examples=[3])
     
-    receipent_address: str = Field(description="Receipent Address")
     proofs: List['ProofDTO'] = Field(description="Proofs")
     
     payment_transaction: Optional[str] = Field(description="Payment Transaction")
@@ -62,11 +60,9 @@ class ChallengeDTO(BaseModel):
             reward_amount=str(int(challenge.reward_amount)),
             title=challenge.title,
             type=challenge.type,
-            description=challenge.description,
             start_date=challenge.start_date,
             end_date=challenge.end_date,
             minimum_proof_count=challenge.minimum_proof_count,
-            receipent_address=challenge.receipent_address,
             proofs=[ProofDTO.from_domain(proof) for proof in challenge.proofs],
             payment_transaction=challenge.payment_transaction,
             payment_reward=str(int(challenge.payment_reward)),

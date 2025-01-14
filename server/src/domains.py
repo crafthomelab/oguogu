@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from decimal import Decimal
+import random
 from typing import Dict, List, Literal, Optional, Union
 from datetime import datetime
 import pytz
@@ -14,6 +15,7 @@ class Challenge:
     """ Challenge 도메인 """
     hash: str
     id: Optional[int]
+    nonce: int
     status: "ChallengeStatus"
     
     challenger_address: str
@@ -21,13 +23,11 @@ class Challenge:
     
     title: str
     type: Literal["photos"]
-    description: str
     
     start_date: datetime
     end_date: datetime
     minimum_proof_count: int
-    
-    receipent_address: str
+
     proofs: List["ChallengeProof"]
     
     payment_transaction: Optional[str] = None
@@ -40,17 +40,12 @@ class Challenge:
         reward_amount: int,
         title: str,
         type: Literal["photos"],
-        description: str,
+        start_date: datetime,
         end_date: datetime,
         minimum_proof_count: int,
-        receipent_address: str,
     ) -> "Challenge":
         if reward_amount <= 0:
             raise ValueError("Reward amount must be greater than 0")
-        
-        start_date = datetime.now(pytz.utc)
-        if end_date < start_date:
-            raise ValueError("End date must be greater than current time")
         
         if minimum_proof_count <= 0:
             raise ValueError("Minimum proof count must be greater than 0")
@@ -58,39 +53,34 @@ class Challenge:
         if type != "photos":
             raise ValueError("Invalid challenge type")
         
-        if not Web3.is_address(receipent_address):
-            raise ValueError("Invalid receipent address")
-        receipent_address = Web3.to_checksum_address(receipent_address)
-        
         if not Web3.is_address(challenger_address):
             raise ValueError("Invalid challenger address")
         challenger_address = Web3.to_checksum_address(challenger_address)
         
+        nonce = random.randint(0, 1000000)        
         challenge_hash = create_hash(
+            nonce=nonce,
             challenger_address=challenger_address,
             reward_amount=reward_amount,
             title=title,
             type=type,
-            description=description,
             start_date=start_date.isoformat(),
             end_date=end_date.isoformat(),
             minimum_proof_count=minimum_proof_count,
-            receipent_address=receipent_address,
         )
         
         return Challenge(
             id=None,
+            nonce=nonce,
             hash=challenge_hash,
             status=ChallengeStatus.INIT,
             challenger_address=challenger_address,
             reward_amount=reward_amount,
             title=title,
             type=type,
-            description=description,
             start_date=start_date,
             end_date=end_date,
             minimum_proof_count=minimum_proof_count,
-            receipent_address=receipent_address,
             proofs=[],
             payment_transaction=None,
             complete_date=None,
