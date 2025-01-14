@@ -27,9 +27,6 @@ contract DeployScript is Script {
         
         testUSDT.mint(user, 100e6);
 
-        testUSDT.transfer(address(oguogu), 100e6);
-        oguogu.depositReward(user);
-
         vm.stopBroadcast();
     }
 }

@@ -29,8 +29,8 @@ contract OGUOGUTest is Test {
 
     function depositReward(address owner, address user, uint256 amount) public {
         vm.startPrank(owner);
-        testUSDT.transfer(address(oguogu), amount);
-        oguogu.depositReward(address(user));
+        testUSDT.approve(address(oguogu), amount);
+        oguogu.depositReward(address(user), amount);
         vm.stopPrank();
     }
 

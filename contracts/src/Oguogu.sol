@@ -32,7 +32,6 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
 
     IERC20 public rewardToken;
     uint256 private _challengeId;
-    uint256 private _prevUSDTBalance;
 
     mapping(address => uint256) public userReserves;
     mapping(address => uint256) public userAllocatedRewards;
@@ -86,31 +85,30 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
         return "https://assets.oguogu.me/challenges/";
     }
 
-    function depositReward(address challenger) external {
+    function depositReward(address challenger, uint256 amount) external {
         /**
          * @notice Deposits reward tokens.
          * 
-         * @dev This function must be called using Multicall3.
-         *      Perform USDT.transfer first, then call OGUOGU.depositReward.
-         *      This combines both functions into a single transaction to save gas costs
-         *      and ensure a smooth deposit process.
+         * @dev The challenger must approve the contract to transfer tokens on their behalf before calling this function.
          *
          * @param challenger The address of the user making the deposit. The address must be valid and cannot be the zero address.
          *
          * @require The challenger address must be valid (not the zero address).
          * @require The amount must be greater than zero.
+         * @require The challenger must have approved the contract to transfer the specified amount of tokens.
          *
          * @effects Increases the user's deposit amount and sets the withdrawal unlock time to 28 days later.
          * @emit Emits a DepositReward event to record the deposited amount.
-         * 
          */
         require(challenger != address(0), "Invalid challenger address");
-        uint256 amount = _getDepositAmount();
         require(amount > 0, "Invalid amount");
+        require(rewardToken.transferFrom(challenger, address(this), amount), "Transfer failed");
         
         unchecked {
             userReserves[challenger] += amount;
-            withdrawableUnlockTime[challenger] = block.timestamp + 28 days;
+            if (challenger == msg.sender) {
+                withdrawableUnlockTime[challenger] = block.timestamp + 28 days;
+            }
         }
         emit DepositReward(challenger, amount);
     }
@@ -308,15 +306,6 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
          */
         unchecked {
             return uint256(keccak256(abi.encodePacked(blockhash(block.number - 1), block.coinbase))) % 100;
-        }
-    }
-
-    function _getDepositAmount() private returns (uint256) {
-        unchecked {
-            uint256 currBalance = rewardToken.balanceOf(address(this));
-            uint256 amount = currBalance - _prevUSDTBalance; 
-            _prevUSDTBalance = currBalance;
-            return amount;
         }
     }
 }
