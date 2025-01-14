@@ -102,7 +102,7 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
          */
         require(challenger != address(0), "Invalid challenger address");
         require(amount > 0, "Invalid amount");
-        require(rewardToken.transferFrom(challenger, address(this), amount), "Transfer failed");
+        require(rewardToken.transferFrom(msg.sender, address(this), amount), "Transfer failed");
 
         unchecked {
             userReserves[challenger] += amount;
