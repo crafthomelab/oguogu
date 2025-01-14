@@ -32,9 +32,8 @@ async def test_submit_proof(
         reward_amount=Web3.to_wei(1, 'ether'),
         title="Test Challenge",
         type="photos",
-        description="Test Challenge Description",
+        start_date=datetime.now(pytz.utc),
         end_date=datetime.now(pytz.utc) + timedelta(days=1),
-        receipent_address=user1_account.address,
         minimum_proof_count=1,
     )
     
@@ -46,9 +45,9 @@ async def test_submit_proof(
         reward=given_challenge.reward_amount,
         challengeHash=given_challenge.hash,
         challengeSignature=challenge_signature.signature,
-        dueDate=int(given_challenge.end_date.timestamp()),
+        startDate=int(given_challenge.start_date.timestamp()),
+        endDate=int(given_challenge.end_date.timestamp()),
         minimumProofCount=given_challenge.minimum_proof_count,
-        receipent=given_challenge.receipent_address
     )
     txreceipt = await transaction_manager.asend_transaction(func, user0_account)
     
@@ -80,7 +79,10 @@ async def test_submit_proof(
         proof_signature=proof_signature
     )
     # 10. 챌린지 완료하기
-    await challenge_reward_service.complete_challenge(output_challenge.hash)
+    before_balance = test_usdt_contract.functions.balanceOf(user0_account.address).call()
+    await challenge_reward_service.complete_challenge(
+        output_challenge.hash,
+    )
     
     # 11. 챌린지 조회하기
     output_challenge = await challenge_registry_service.get_challenge(given_challenge.hash)
@@ -89,5 +91,5 @@ async def test_submit_proof(
     assert output_challenge.status == ChallengeStatus.SUCCESS
     
     # 13. 실제로 지급되었는지 확인
-    balance = test_usdt_contract.functions.balanceOf(user1_account.address).call()
+    balance = test_usdt_contract.functions.balanceOf(user0_account.address).call() - before_balance
     assert balance <= Web3.to_wei(1, 'ether') and balance > 0

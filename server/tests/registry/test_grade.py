@@ -42,9 +42,8 @@ async def test_submit_proof(
         reward_amount=Web3.to_wei(1, 'ether'),
         title="Test Challenge",
         type="photos",
-        description="Test Challenge Description",
+        start_date=datetime.now(pytz.utc),
         end_date=datetime.now(pytz.utc) + timedelta(days=1),
-        receipent_address=user0_account.address,
         minimum_proof_count=1,
     )
     
@@ -56,9 +55,9 @@ async def test_submit_proof(
         reward=given_challenge.reward_amount,
         challengeHash=given_challenge.hash,
         challengeSignature=challenge_signature.signature,
-        dueDate=int(given_challenge.end_date.timestamp()),
+        startDate=int(given_challenge.start_date.timestamp()),
+        endDate=int(given_challenge.end_date.timestamp()),
         minimumProofCount=given_challenge.minimum_proof_count,
-        receipent=given_challenge.receipent_address
     )
     txreceipt = await transaction_manager.asend_transaction(func, user0_account)
     

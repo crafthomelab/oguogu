@@ -20,7 +20,7 @@ class ChallengeRewardService:
         challenge = await self.repository.get_challenge(challenge_hash)
         if not challenge.available_to_complete():
             raise ValueError("Challenge is not available to complete")
-        request = self.complete_function(challenge.id)
+        request = self.complete_function(challenge.challenger_address, challenge.id)
                 
         tx_receipt = await self.transaction.asend_transaction(request)
         tx_hash = tx_receipt['transactionHash'].to_0x_hex()
