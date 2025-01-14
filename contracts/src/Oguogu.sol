@@ -35,6 +35,7 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
 
     mapping(address => uint256) public userReserves;
     mapping(address => uint256) public userAllocatedRewards;
+    mapping(address => uint256) public withdrawableUnlockTime;
 
     uint256 private _challengeId;
     mapping(uint256 => Challenge) private _challenges;
@@ -57,6 +58,8 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
     }
 
     event DepositReward(address indexed challenger, uint256 amount);
+    event WithdrawReward(address indexed challenger, uint256 amount);
+
     event ChallengeCreated(uint256 indexed tokenId, address indexed challenger, bytes32 challengeHash);
     event SubmitProof(uint256 indexed tokenId, address indexed challenger, bytes32 proofHash);
 
@@ -96,6 +99,18 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
         userReserves[challenger] += amount;
 
         emit DepositReward(challenger, amount);
+    }
+
+    function withdrawReward(address receiver, uint256 amount) external {
+        address challenger = msg.sender;
+        require(challenger != address(0), "Invalid challenger address");
+        require(amount > 0, "Invalid amount");
+        require(userReserves[challenger] - userAllocatedRewards[challenger] >= amount, "Insufficient balance");
+
+        userReserves[challenger] -= amount;
+        rewardToken.transfer(receiver, amount);
+
+        emit WithdrawReward(challenger, amount);
     }
 
     function createChallenge(
