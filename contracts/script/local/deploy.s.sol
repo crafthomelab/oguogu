@@ -13,7 +13,6 @@ contract DeployScript is Script {
     TestUSDT public testUSDT;
     Multicall3 public multicall3;
 
-
     function setUp() public {}
 
     function run() public {
@@ -34,7 +33,7 @@ contract DeployScript is Script {
         console.log("USDT address:", address(testUSDT));
         console.log("OGUOGU address:", address(proxy));
         console.log("Multicall3 address:", address(multicall3));
-        
+
         vm.stopBroadcast();
     }
 }

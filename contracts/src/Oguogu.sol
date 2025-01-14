@@ -10,7 +10,7 @@ import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
-/** 
+/**
  * @title OGUOGU, A Project for Everyday Challenges
  * @author craftsangjae
  * @notice
@@ -88,7 +88,7 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
     function depositReward(address challenger, uint256 amount) external {
         /**
          * @notice Deposits reward tokens.
-         * 
+         *
          * @dev The challenger must approve the contract to transfer tokens on their behalf before calling this function.
          *
          * @param challenger The address of the user making the deposit. The address must be valid and cannot be the zero address.
@@ -103,7 +103,7 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
         require(challenger != address(0), "Invalid challenger address");
         require(amount > 0, "Invalid amount");
         require(rewardToken.transferFrom(challenger, address(this), amount), "Transfer failed");
-        
+
         unchecked {
             userReserves[challenger] += amount;
             if (challenger == msg.sender) {
@@ -116,20 +116,20 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
     function withdrawReward(address receiver) external {
         /**
          * @notice Withdraws reward tokens.
-         * 
+         *
          * @dev It is important to note that the `withdrawableUnlockTime` determines when withdrawals are allowed.
          *      The `withdrawableUnlockTime` is extended each time a deposit is made or when a challenge fails.
          *      Ensure that the current time is past the `withdrawableUnlockTime` before attempting a withdrawal.
-         * 
+         *
          * @param receiver The address of the user receiving the withdrawal.
          */
         address challenger = msg.sender;
-        
+
         require(receiver != address(0), "Invalid receiver address");
         uint256 amount = userReserves[challenger] - userAllocatedRewards[challenger];
         require(amount > 0, "Invalid amount");
         require(withdrawableUnlockTime[challenger] <= block.timestamp, "Withdrawal not yet available");
-        
+
         userReserves[challenger] -= amount;
         rewardToken.transfer(receiver, amount);
 
@@ -148,7 +148,7 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
          * @notice Creates a new challenge(NFT).
          * - Issues a unique NFT for each challenge.
          * - Only the challenge creator or owner can create a challenge.
-         * 
+         *
          * @dev The OguOgu signature is required separately to ensure that the challenge information
          *      has been provided to the OguOgu system by the participant. This guarantees the integrity
          *      and authenticity of the challenge data before it is accepted.
@@ -160,25 +160,18 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
         require(block.timestamp < endDate, "Invalid end date");
         require(minimumProofCount > 0, "Invalid minimum proof count");
         require(challengeHashes[challengeHash] == address(0), "Challenge already exists");
-        
+
         challengeHashes[challengeHash] = msg.sender;
 
         require(verifySignature(owner(), challengeHash, challengeSignature), "Invalid signature");
-        
+
         unchecked {
             userAllocatedRewards[msg.sender] += reward;
             require(userAllocatedRewards[msg.sender] <= userReserves[msg.sender], "Insufficient balance");
         }
 
-        _challenges[_challengeId] = Challenge(
-            challengeHash, 
-            new bytes32[](0),
-            reward, 
-            startDate, 
-            endDate, 
-            minimumProofCount, 
-            false
-        );
+        _challenges[_challengeId] =
+            Challenge(challengeHash, new bytes32[](0), reward, startDate, endDate, minimumProofCount, false);
 
         _safeMint(msg.sender, _challengeId);
         emit ChallengeCreated(_challengeId, msg.sender, challengeHash);
@@ -188,13 +181,13 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
     function submitProof(uint256 tokenId, bytes32 proofHash, bytes memory proofSignature) external onlyOwner {
         /**
          * @notice Submits proof for a challenge.
-         * 
+         *
          * @dev This function can only be called by the OGUOGU contract owner.
          *      The `proofSignature` is crucial as it verifies that the proof was generated
          *      by the challenge creator, ensuring the authenticity of the submission.
-         * 
+         *
          * @param tokenId The ID of the challenge.
-         * @param proofHash The hash of the proof. 
+         * @param proofHash The hash of the proof.
          * @param proofSignature The signature of the proof generated by the challenge creator.
          */
         require(getChallengeStatus(tokenId) == ChallengeStatus.OPEN, "challenge is completed");
@@ -216,7 +209,7 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
     function completeChallenge(address receipent, uint256 tokenId) external {
         /**
          * @notice Completes the challenge and distributes the reward.
-         * 
+         *
          * @dev If the challenge fails, the reward is remained in the challenger's reserve.
          *      The recipient is set to the challenger if the caller is not the challenger.
          *
@@ -227,13 +220,12 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
         if (msg.sender != challenger) {
             receipent = challenger;
         }
-        
+
         ChallengeStatus status = getChallengeStatus(tokenId);
         Challenge memory challenge = _challenges[tokenId];
         require(status != ChallengeStatus.OPEN, "Challenge is not closed");
         require(!challenge.isClosed, "Challenge is already closed");
 
-        
         _challenges[tokenId].isClosed = true;
         userAllocatedRewards[challenger] -= challenge.reward;
 
@@ -275,7 +267,7 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
             uint256, // challenge start date
             uint256, // challenge end date
             uint64, // minimum proof count
-            bool // challenge closure status            
+            bool // challenge closure status
         )
     {
         Challenge memory challenge = _challenges[tokenId];
