@@ -6,35 +6,35 @@ import {OGUOGU} from "src/Oguogu.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {TestUSDT} from "src/misc/TestToken.sol";
+import {Multicall3} from "src/multicall3.sol";
 
 contract DeployScript is Script {
     OGUOGU public oguogu;
     TestUSDT public testUSDT;
+    Multicall3 public multicall3;
+
 
     function setUp() public {}
 
     function run() public {
         uint256 deployerPrivateKey = 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80;
-        uint256 userPrivateKey = 0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d;
         address deployer = vm.addr(deployerPrivateKey);
-        address user = vm.addr(userPrivateKey);
 
         vm.startBroadcast(deployerPrivateKey);
         testUSDT = new TestUSDT();
-
-        testUSDT.mint(deployer, 100e6);
-        testUSDT.mint(user, 100e6);
 
         oguogu = new OGUOGU();
 
         bytes memory data = abi.encodeWithSignature("initialize(address,address)", address(testUSDT), address(deployer));
         ERC1967Proxy proxy = new ERC1967Proxy(address(oguogu), data);
+        multicall3 = new Multicall3();
 
         oguogu = OGUOGU(address(proxy));
 
         console.log("USDT address:", address(testUSDT));
         console.log("OGUOGU address:", address(proxy));
-
+        console.log("Multicall3 address:", address(multicall3));
+        
         vm.stopBroadcast();
     }
 }

@@ -14,17 +14,19 @@ contract DeployScript is Script {
     function setUp() public {}
 
     function run() public {
+        address user = 0xd6f34075965Ae85763829850E222Fea6d70C075E;
+
         uint256 deployerPrivateKey = 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80;
-        uint256 userPrivateKey = 0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d;
         address deployer = vm.addr(deployerPrivateKey);
-        address user = vm.addr(userPrivateKey);
         oguogu = OGUOGU(address(0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9));
         testUSDT = TestUSDT(address(0x5FbDB2315678afecb367f032d93F642f64180aa3));
 
         vm.startBroadcast(deployerPrivateKey);
-
+        
+        payable(address(0xd6f34075965Ae85763829850E222Fea6d70C075E)).transfer(100e18);
         testUSDT.mint(deployer, 100e6);
         testUSDT.mint(user, 100e6);
+
 
         testUSDT.approve(address(oguogu), 100e6);
         oguogu.depositReward(user, 100e6);

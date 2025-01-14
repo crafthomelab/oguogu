@@ -10,21 +10,20 @@ import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
-/**
- * @title OGUOGU, 일상의 작은 도전 프로젝트
+/** 
+ * @title OGUOGU, A Project for Everyday Challenges
  * @author craftsangjae
  * @notice
- * 어린 시절, 우리가 숙제를 해오거나 착한 일을 할 때, 어른은 우리에게 칭찬해 줍니다.
- * 어른이 된 지금, 우리에게도 어린 시절 받았던 칭찬과 격려는 필요합니다.
+ * In our childhood, when we completed our homework or did good deeds, adults praised us.
+ * Now, as adults, we still need the praise and encouragement we received as children.
  *
- * 어른은 아침에 일찍 일어났다고, 운동하러 나갔다고, 책을 읽었다고, 영어 공부했다고
- * 이런 사소한 것으로 칭찬받기는 쉽지 않습니다. 매번 해내겠다며 마음 먹지만, 우린 일상의 바쁨 때문에
- * 해내지 못할 때가 많죠.
+ * It's not easy for adults to receive praise for waking up early, going for a workout, reading a book, or studying English.
+ * We often set our minds to accomplish these tasks, but the busyness of daily life can prevent us from achieving them.
  *
- * 하지만, 하루하루 쌓아올린 작은 성취들이 우리를 더 나은 사람으로 만들어 줘요.
- * OGUOGU는 우리를 칭찬해주며, 해내었던 작은 성취에 보상해주는 시스템입니다.
+ * However, the small achievements we accumulate each day make us better individuals.
+ * OGUOGU is a system that praises us and rewards our small accomplishments.
  *
- * OGUOGU는 하루하루 작은 성취들을 쌓아나갈 수 있도록, 그리고 그것을 기록할 수 있도록 장려합니다.
+ * OGUOGU encourages us to build up small achievements day by day and to record them.
  */
 contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
     using Strings for uint256;
@@ -32,23 +31,24 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
     using ECDSA for bytes32;
 
     IERC20 public rewardToken;
+    uint256 private _challengeId;
+    uint256 private _prevUSDTBalance;
 
     mapping(address => uint256) public userReserves;
     mapping(address => uint256) public userAllocatedRewards;
     mapping(address => uint256) public withdrawableUnlockTime;
 
-    uint256 private _challengeId;
     mapping(uint256 => Challenge) private _challenges;
     mapping(bytes32 => address) public challengeHashes;
 
     struct Challenge {
-        uint256 reward; // 리워드 금액
-        bytes32 challengeHash; // 챌린지 해시값(md5 해시값)
-        uint256 dueDate; // 챌린지 종료 날짜
-        uint64 minimumProofCount; // 최소 증명 갯수
-        address receipent; // 챌린지 성공 후, 보상 받을 주소
-        bytes32[] proofHashes; // 챌린지 증명 해시값들
-        bool isClosed; // 챌린지 종료 여부
+        bytes32 challengeHash; // challenge hash
+        bytes32[] proofHashes; // proof hashes
+        uint256 reward; // reward amount
+        uint256 startDate; // challenge start date
+        uint256 endDate; // challenge end date
+        uint64 minimumProofCount; // minimum proof count
+        bool isClosed; // Challenge closure status
     }
 
     enum ChallengeStatus {
@@ -61,52 +61,77 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
     event WithdrawReward(address indexed challenger, uint256 amount);
 
     event ChallengeCreated(uint256 indexed tokenId, address indexed challenger, bytes32 challengeHash);
-    event SubmitProof(uint256 indexed tokenId, address indexed challenger, bytes32 proofHash);
+    event SubmitProof(uint256 indexed tokenId, address indexed challenger, bytes32 challengeHash, bytes32 proofHash);
 
     event ChallengeCompleted(
         uint256 indexed tokenId, address indexed challenger, ChallengeStatus status, uint256 paymentReward
     );
 
     function initialize(address _rewardToken, address _operator) public initializer {
+        /**
+         * @param _rewardToken The address of the reward token.
+         * @param _operator The address of the challenge creator or owner, who has the authority to submit proofs.
+         */
         require(_rewardToken != address(0), "Invalid token address");
         require(_operator != address(0), "Invalid operator address");
 
-        // 보상 토큰(Tether Token)
         rewardToken = IERC20(_rewardToken);
         _challengeId = 1;
 
-        // owner : proof submit할 수 있는 권한
         __Ownable_init(_operator);
         __ERC721_init("OGUOGU", "OGUOGU");
     }
 
     function _baseURI() internal pure override returns (string memory) {
-        return "https://resources.oguogu.me/challenges/";
+        return "https://assets.oguogu.me/challenges/";
     }
 
-    function depositReward(address challenger, uint256 amount) external {
+    function depositReward(address challenger) external {
         /**
-         * 보상 토큰을 예치합니다.
+         * @notice Deposits reward tokens.
+         * 
+         * @dev This function must be called using Multicall3.
+         *      Perform USDT.transfer first, then call OGUOGU.depositReward.
+         *      This combines both functions into a single transaction to save gas costs
+         *      and ensure a smooth deposit process.
          *
-         * @param challenger 예치한 사용자
-         * @param amount 예치한 금액
+         * @param challenger The address of the user making the deposit. The address must be valid and cannot be the zero address.
          *
+         * @require The challenger address must be valid (not the zero address).
+         * @require The amount must be greater than zero.
+         *
+         * @effects Increases the user's deposit amount and sets the withdrawal unlock time to 28 days later.
+         * @emit Emits a DepositReward event to record the deposited amount.
+         * 
          */
         require(challenger != address(0), "Invalid challenger address");
+        uint256 amount = _getDepositAmount();
         require(amount > 0, "Invalid amount");
-        require(rewardToken.transferFrom(msg.sender, address(this), amount), "Transfer failed");
-
-        userReserves[challenger] += amount;
-
+        
+        unchecked {
+            userReserves[challenger] += amount;
+            withdrawableUnlockTime[challenger] = block.timestamp + 28 days;
+        }
         emit DepositReward(challenger, amount);
     }
 
-    function withdrawReward(address receiver, uint256 amount) external {
+    function withdrawReward(address receiver) external {
+        /**
+         * @notice Withdraws reward tokens.
+         * 
+         * @dev It is important to note that the `withdrawableUnlockTime` determines when withdrawals are allowed.
+         *      The `withdrawableUnlockTime` is extended each time a deposit is made or when a challenge fails.
+         *      Ensure that the current time is past the `withdrawableUnlockTime` before attempting a withdrawal.
+         * 
+         * @param receiver The address of the user receiving the withdrawal.
+         */
         address challenger = msg.sender;
-        require(challenger != address(0), "Invalid challenger address");
+        
+        require(receiver != address(0), "Invalid receiver address");
+        uint256 amount = userReserves[challenger] - userAllocatedRewards[challenger];
         require(amount > 0, "Invalid amount");
-        require(userReserves[challenger] - userAllocatedRewards[challenger] >= amount, "Insufficient balance");
-
+        require(withdrawableUnlockTime[challenger] <= block.timestamp, "Withdrawal not yet available");
+        
         userReserves[challenger] -= amount;
         rewardToken.transfer(receiver, amount);
 
@@ -117,72 +142,70 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
         uint256 reward,
         bytes32 challengeHash,
         bytes memory challengeSignature,
-        uint256 dueDate,
+        uint256 startDate,
+        uint256 endDate,
         uint64 minimumProofCount,
         address receipent
     ) external returns (uint256) {
         /**
-         * 신규 챌린지를 생성합니다.
-         * - 챌린지 별로 고유한 NFT를 발행합니다.
-         * - 챌린지 생성자 혹은 owner만 챌린지를 생성할 수 있습니다.
+         * @notice Creates a new challenge(NFT).
+         * - Issues a unique NFT for each challenge.
+         * - Only the challenge creator or owner can create a challenge.
+         * 
+         * @dev The OguOgu signature is required separately to ensure that the challenge information
+         *      has been provided to the OguOgu system by the participant. This guarantees the integrity
+         *      and authenticity of the challenge data before it is accepted.
+         *
+         * @dev The challengeHash is used as the ID of the challenge in the OguOgu system. Therefore, it must be unique.
          */
         require(receipent != address(0), "Invalid receipent address");
         require(reward > 0, "Invalid reward");
-        require(dueDate > block.timestamp, "Invalid due date");
+        require(startDate < endDate, "Invalid start date");
+        require(block.timestamp < endDate, "Invalid end date");
         require(minimumProofCount > 0, "Invalid minimum proof count");
-
-        // 챌린지 해시값은 OGUOGU에서 ID값으로 활용되기 때문에, 중복되지 않아야 합니다.
         require(challengeHashes[challengeHash] == address(0), "Challenge already exists");
+        
         challengeHashes[challengeHash] = msg.sender;
 
-        // [OguOgu의 Signature가 필요한 이유]
-        //  챌린지를 검증하는 사람에게 challenge 정보를 제공한 이후에 challengeHash와 challengeSignature를 생성할 수 있기 때문에
-        //  챌린지 참여자가 OguOgu쪽으로 챌린지 정보를 제공했다는 것을 보장할 수 있다.
         require(verifySignature(owner(), challengeHash, challengeSignature), "Invalid signature");
+        
+        unchecked {
+            userAllocatedRewards[msg.sender] += reward;
+            require(userAllocatedRewards[msg.sender] <= userReserves[msg.sender], "Insufficient balance");
+        }
 
-        userAllocatedRewards[msg.sender] += reward;
-        require(userAllocatedRewards[msg.sender] <= userReserves[msg.sender], "Insufficient balance");
-
-        _challenges[_challengeId] =
-            Challenge(reward, challengeHash, dueDate, minimumProofCount, receipent, new bytes32[](0), false);
+        _challenges[_challengeId] = Challenge(
+            challengeHash, 
+            new bytes32[](0),
+            reward, 
+            startDate, 
+            endDate, 
+            minimumProofCount, 
+            false
+        );
 
         _safeMint(msg.sender, _challengeId);
         emit ChallengeCreated(_challengeId, msg.sender, challengeHash);
         return _challengeId++;
     }
 
-    function getChallengeStatus(uint256 tokenId) public view returns (ChallengeStatus) {
-        /**
-         * 챌린지 상태를 조회합니다
-         *
-         * @param tokenId 챌린지 ID
-         */
-        Challenge memory challenge = _challenges[tokenId];
-
-        if (challenge.proofHashes.length >= challenge.minimumProofCount) {
-            return ChallengeStatus.SUCCESS;
-        }
-
-        if (challenge.dueDate < block.timestamp) {
-            return ChallengeStatus.FAILED;
-        }
-
-        return ChallengeStatus.OPEN;
-    }
-
     function submitProof(uint256 tokenId, bytes32 proofHash, bytes memory proofSignature) external onlyOwner {
         /**
-         * 챌린지 수행에 대한 증명자료를 제출합니다.
-         *
-         * @param tokenId 챌린지 ID
-         * @param proofHash 증명 해시값
-         * @param proofSignature 증명에 대한 서명
+         * @notice Submits proof for a challenge.
+         * 
+         * @dev This function can only be called by the OGUOGU contract owner.
+         *      The `proofSignature` is crucial as it verifies that the proof was generated
+         *      by the challenge creator, ensuring the authenticity of the submission.
+         * 
+         * @param tokenId The ID of the challenge.
+         * @param proofHash The hash of the proof. 
+         * @param proofSignature The signature of the proof generated by the challenge creator.
          */
-        require(_challenges[tokenId].receipent != address(0), "Invalid challenge");
         require(getChallengeStatus(tokenId) == ChallengeStatus.OPEN, "challenge is completed");
         require(verifySignature(ownerOf(tokenId), proofHash, proofSignature), "Invalid signature");
 
         for (uint256 i = 0; i < _challenges[tokenId].proofHashes.length; i++) {
+            // duplicate proof submission check
             if (_challenges[tokenId].proofHashes[i] == proofHash) {
                 revert("Proof already submitted");
             }
@@ -190,16 +213,18 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
 
         _challenges[tokenId].proofHashes.push(proofHash);
 
-        emit SubmitProof(tokenId, ownerOf(tokenId), proofHash);
+        emit SubmitProof(tokenId, ownerOf(tokenId), _challenges[tokenId].challengeHash, proofHash);
         emit MetadataUpdate(tokenId);
     }
 
-    function completeChallenge(uint256 tokenId) external {
+    function completeChallenge(address receipent, uint256 tokenId) external {
         /**
-         * 챌린지를 종료하고, 보상을 지급합니다.
-         * 실패 시, 보상은 예치 보상으로 넘어갑니다.
+         * @notice Completes the challenge and distributes the reward.
+         * 
+         * @dev If the challenge fails, the reward is added to the deposit rewards.
          *
-         * @param tokenId 챌린지 ID
+         * @param recipient The address to receive the reward.
+         * @param tokenId The ID of the challenge.
          */
         ChallengeStatus status = getChallengeStatus(tokenId);
         Challenge memory challenge = _challenges[tokenId];
@@ -212,30 +237,53 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
 
         uint256 paymentReward = 0;
         if (status == ChallengeStatus.SUCCESS) {
-            // 챌린지 성공 시, 랜덤보상을 지급합니다.
             paymentReward = pickPaymentReward(challenge.reward);
-            rewardToken.transfer(challenge.receipent, paymentReward);
+            rewardToken.transfer(receipent, paymentReward);
 
             userReserves[challenger] -= paymentReward;
+        } else {
+            withdrawableUnlockTime[challenger] += 7 days;
         }
 
         emit ChallengeCompleted(tokenId, challenger, status, paymentReward);
         emit MetadataUpdate(tokenId);
     }
 
+    function getChallengeStatus(uint256 tokenId) public view returns (ChallengeStatus) {
+        Challenge memory challenge = _challenges[tokenId];
+
+        if (challenge.proofHashes.length >= challenge.minimumProofCount) {
+            return ChallengeStatus.SUCCESS;
+        }
+
+        if (challenge.endDate < block.timestamp) {
+            return ChallengeStatus.FAILED;
+        }
+
+        return ChallengeStatus.OPEN;
+    }
+
     function getChallenge(uint256 tokenId)
         external
         view
-        returns (uint256, bytes32, uint256, uint64, address, bytes32[] memory, bool)
+        returns (
+            bytes32, // challenge hash
+            bytes32[] memory, // proof hashes
+            uint256, // reward amount
+            uint256, // challenge start date
+            uint256, // challenge end date
+            uint64, // minimum proof count
+            bool // challenge closure status            
+        )
     {
         Challenge memory challenge = _challenges[tokenId];
         return (
-            challenge.reward,
             challenge.challengeHash,
-            challenge.dueDate,
-            challenge.minimumProofCount,
-            challenge.receipent,
             challenge.proofHashes,
+            challenge.reward,
+            challenge.startDate,
+            challenge.endDate,
+            challenge.minimumProofCount,
             challenge.isClosed
         );
     }
@@ -251,11 +299,20 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
 
     function pickRandomValue() private view returns (uint256) {
         /**
-         * blockhash와 block.coinbase를 사용하여 랜덤값을 생성합니다.
-         * : Operator의 조작 가능성을 낮추기 위함입니다.
+         * Generates a random value using blockhash and block.coinbase.
+         * This is to reduce the possibility of manipulation by the operator.
          */
         unchecked {
             return uint256(keccak256(abi.encodePacked(blockhash(block.number - 1), block.coinbase))) % 100;
+        }
+    }
+
+    function _getDepositAmount() private returns (uint256) {
+        unchecked {
+            uint256 currBalance = rewardToken.balanceOf(address(this));
+            uint256 amount = currBalance - _prevUSDTBalance; 
+            _prevUSDTBalance = currBalance;
+            return amount;
         }
     }
 }
