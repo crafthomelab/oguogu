@@ -21,7 +21,6 @@ CREATE INDEX idx_start_date ON challenges (start_date);
 CREATE TABLE challenge_activities (
     challenge_hash VARCHAR NOT NULL REFERENCES challenges(hash),
     activity_hash VARCHAR NOT NULL,
-    content JSON NOT NULL,
     activity_transaction VARCHAR,
     activity_date TIMESTAMPTZ,
     PRIMARY KEY (challenge_hash, activity_hash)

@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     )
     
     S3_URL: str = Field(
-        default="localhost:9000",
+        default="http://localhost:9000",
         description="s3 url",
     )
     
