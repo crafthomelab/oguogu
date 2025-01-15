@@ -30,7 +30,7 @@ class ChallengeEntity(Base):
     minimum_activity_count: Mapped[int] = mapped_column(Integer)
     
     payment_transaction: Mapped[str] = mapped_column(String, nullable=True)
-    payment_reward: Mapped[int] = mapped_column(Integer)
+    payment_reward: Mapped[int] = mapped_column(Numeric(precision=78, scale=0))
     complete_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
     
     activities: Mapped[List["ChallengeActivityEntity"]] = relationship(
@@ -65,14 +65,14 @@ class ChallengeEntity(Base):
             nonce=self.nonce,
             status=ChallengeStatus(self.status),
             challenger_address=self.challenger_address,
-            reward_amount=self.reward_amount,
+            reward_amount=int(self.reward_amount),
             title=self.title,
             type=ChallengeType[self.type],
             start_date=self.start_date,
             end_date=self.end_date,
             minimum_activity_count=self.minimum_activity_count,
             payment_transaction=self.payment_transaction,
-            payment_reward=self.payment_reward,
+            payment_reward=int(self.payment_reward),
             complete_date=self.complete_date,
             activities=[activity.to_domain() for activity in self.activities],
         )

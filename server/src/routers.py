@@ -1,12 +1,13 @@
 from datetime import datetime
-from typing import Annotated, List, Literal, Optional
+import json
+from typing import Annotated, Dict, List, Literal, Optional
 from eth_typing import ChecksumAddress
 from fastapi import APIRouter, Depends, Form, UploadFile
 from dependency_injector.wiring import Provide, inject
 from fastapi.responses import StreamingResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from src.container import AppContainer
-from src.domains import Challenge, ChallengeActivity, ChallengeSignature
+from src.domains import Challenge, ChallengeActivity, ChallengeSignature, ChallengeStatus
 from src.exceptions import ClientException
 from src.registry.challenge import ChallengeRegistryService
 from pydantic import BaseModel, Field
@@ -67,7 +68,7 @@ class ChallengeDTO(BaseModel):
             start_date=challenge.start_date,
             end_date=challenge.end_date,
             minimum_activity_count=challenge.minimum_activity_count,
-            activities=[ActivityDTO.from_domain(activity) for activity in challenge.activities],
+            activities=[ActivityDTO.from_domain(activity) for activity in challenge.activities if activity.is_completed()],
             payment_transaction=challenge.payment_transaction,
             payment_reward=str(int(challenge.payment_reward)),
             complete_date=challenge.complete_date,
@@ -78,19 +79,12 @@ class ActivityDTO(BaseModel):
     """ Activity DTO """
     activity_hash: str = Field(description="Activity Hash")
     activity_date: datetime = Field(description="Activity Date")
-
-    content_type: Optional[str] = Field(description="Content Type")
-    image: Optional[str] = Field(description="base64 encoded JPEG image")
-    screenshot_date: Optional[str] = Field(description="Screenshot Date")
     
     @staticmethod
     def from_domain(activity: ChallengeActivity) -> 'ActivityDTO':
         return ActivityDTO(
             activity_hash=activity.activity_hash,
-            activity_date=activity.activity_date,
-            content_type=activity.content.get("content_type"),
-            image=activity.content.get("image"),
-            screenshot_date=activity.content.get("screenshot_date"),
+            activity_date=activity.activity_date
         )
 
 
@@ -109,12 +103,13 @@ class ChallengeSignatureDTO(BaseModel):
     """ Challenge Signature DTO """
     challenge_hash: str = Field(description="Challenge Hash")
     signature: str = Field(description="Signature")
-    
+    payload: str = Field(description="Payload")
     @staticmethod
     def from_domain(signature: ChallengeSignature) -> 'ChallengeSignatureDTO':
         return ChallengeSignatureDTO(
             challenge_hash=signature.challenge_hash,
             signature=signature.signature,
+            payload=json.dumps(signature.payload, ensure_ascii=False, indent=4),
         )
 
 
@@ -187,7 +182,14 @@ async def create_challenge(
         minimum_activity_count=challenge.minimum_activity_count
     )
     
-    signature = await registry.sign_new_challenge(challenge)
+    skip_create = False
+    if existed := await registry.find_challenge(challenge.hash):
+        if existed.status == ChallengeStatus.INIT:
+            skip_create = True
+        else:
+            raise ClientException(message="이미 챌린지가 존재해요.")
+        
+    signature = await registry.sign_new_challenge(challenge, skip_create)
     return ChallengeSignatureDTO.from_domain(signature)
 
 
@@ -212,14 +214,19 @@ async def register_photo_activity(
 ) -> ActivityHashDTO:
     activity_content = await generate_photo_activity(activity_file)
     
-    if activity := await activity_service.find_activity(challenge_hash, activity_content.activity_hash):
+    activity = ChallengeActivity.new(activity_content)
+    if activity := await activity_service.find_activity(challenge_hash, activity.activity_hash):
         if activity.is_completed():
             raise ClientException(message="이미 제출한 제출물이에요.")
+        return ActivityHashDTO(activity_hash=activity.activity_hash)
+    else:
+        activity = ChallengeActivity.new(activity_content)
+        
     
     challenge = await registry.get_challenge(challenge_hash)
     
     await activity_service.register_activity(challenge, activity_content)
-    activity = ChallengeActivity.new(activity_content)
+    
     return ActivityHashDTO(activity_hash=activity.activity_hash)
 
 
@@ -242,10 +249,16 @@ async def get_photo_activity(
     if activity is None:
         raise ClientException(message="존재하지 않은 제출물이에요.")
     
-    stream_body = await activity_service.stream_activity_image(challenge_hash, activity_hash)
+    async def s3_stream():
+        async with activity_service.astream_activity_image(challenge_hash, activity_hash) as s3_stream:
+            # aioboto3의 StreamingBody는 async for chunk in ... 으로 반복 가능
+            async for chunk in s3_stream.iter_chunks(chunk_size=1024 * 128):
+                yield chunk    
+    
+    
     return StreamingResponse(
-        content=stream_body,
-        media_type=activity.content.get("content_type")
+        content=s3_stream(),
+        media_type='image/jpeg'
     )
 
 

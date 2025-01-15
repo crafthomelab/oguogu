@@ -11,7 +11,7 @@ from web3.types import TxReceipt
 from typing import Optional
 from eth_abi.packed import encode_packed
     
-def create_hash(**kwargs) -> bytes:
+def create_hash(**kwargs) -> HexBytes:
     """ 챌린지 해시를 생성합니다 """
     data_string = ''.join(f'{key}:{value}' for key, value in sorted(kwargs.items()))
     data_bytes = data_string.encode('utf-8')
@@ -130,7 +130,8 @@ async def generate_photo_activity(activity_file: UploadFile) -> dict:
     return {
         "image": image,
         "content_type": content_type,
-        "screenshot_date": screenshot_date
+        "screenshot_date": screenshot_date,
+        'image_bytes': image_bytes
     }
 
 

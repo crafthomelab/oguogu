@@ -13,7 +13,7 @@ echo 'forge script 2. deposit'
 forge script --broadcast --rpc-url http://localhost:8545 -vvvv script/local/deposit.s.sol
 
 echo 'minio 1. create alias'
-docker exec -it oguogu-minio mc alias set minio http://localhost:9000 $S3_ACCESS_KEY $S3_SECRET_KEY
+docker exec -it oguogu-minio sh -c 'mc alias set minio http://localhost:9000 $MINIO_ROOT_USER $MINIO_ROOT_PASSWORD'
 
 echo 'minio 2. create bucket'
 docker exec -it oguogu-minio mc mb minio/oguogu

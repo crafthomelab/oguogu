@@ -167,5 +167,5 @@ class TransactionManager:
 
 def verify_transaction(tx_receipt: TxReceipt) -> bool:
     if tx_receipt.status != 1:
-        raise Exception(f"Failed to send transaction.. status: {tx_receipt.status} tx_hash: {tx_receipt.transaction_hash}")
+        raise Exception(f"Failed to send transaction.. status: {tx_receipt.status} tx_hash: {tx_receipt.transactionHash}")
     return True

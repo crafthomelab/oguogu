@@ -63,7 +63,8 @@ async def test_submit_activity(
     # 7. 유저가 챌린지 증명하기
     activity_content = {
         "content_type": "image/jpeg",
-        "image": "test2"
+        "image": "test2",
+        'image_bytes': b'test2'
     }    
     activity = ChallengeActivity.new(activity_content)
     activity_signature = transaction_manager.create_signature(activity.activity_hash, user0_account).to_0x_hex()

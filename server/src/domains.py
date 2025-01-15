@@ -99,15 +99,18 @@ class Challenge:
         return (
             self.status == ChallengeStatus.OPEN
             and self.end_date >= datetime.now(pytz.utc)
-            and len(self.activities) < self.minimum_activity_count
+            and len(self._completed_activites()) < self.minimum_activity_count
         )   
+        
+    def _completed_activites(self) -> List[str]:
+        return [activity.activity_hash for activity in self.activities if activity.is_completed()]
         
     def available_to_complete(self) -> bool:
         """ 챌린지 완료 처리 가능한지 여부 """
         if self.status != ChallengeStatus.OPEN:
             return False
         
-        if len(self.activities) >= self.minimum_activity_count:
+        if len(self._completed_activites()) >= self.minimum_activity_count:
             return True
         
         return self.end_date < datetime.now(pytz.utc)
@@ -137,6 +140,9 @@ class Challenge:
         self.payment_reward = payment_reward
         self.complete_date = complete_date
         
+    
+    def is_completed(self) -> bool:
+        return self.status == ChallengeStatus.SUCCESS or self.status == ChallengeStatus.FAILED
 
 
 class ChallengeStatus(Enum):
@@ -176,4 +182,5 @@ class ChallengeSignature:
     """ 챌린지 서명 도메인 """
     challenge_hash: str
     signature: str
+    payload: Dict[str, any]
 

@@ -18,8 +18,11 @@ contract DeployScript is Script {
         uint256 userPrivateKey = 0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d;
 
         // EIP-191 prefix
-        string memory message = "hello";
-        bytes memory messageBytes = abi.encodePacked(message);
+        // string memory message = "hello";
+        // bytes memory messageBytes = abi.encodePacked(message);
+        bytes32 messageBytes =
+            abi.decode(hex"b7e2565ca3ccaf821e926825f7e843c035b950b2d44fe29f09916c456aeb7f76", (bytes32));
+
         bytes memory prefix = "\x19Ethereum Signed Message:\n";
         bytes memory prefixedMessage = abi.encodePacked(prefix, uintToStr(messageBytes.length), messageBytes);
 
