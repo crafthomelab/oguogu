@@ -38,6 +38,7 @@ async def test_submit_proof(
     
     # 2. 챌린지 정의하기
     given_challenge = Challenge.new(
+        nonce=2,
         challenger_address=user0_account.address,
         reward_amount=Web3.to_wei(1, 'ether'),
         title="Test Challenge",

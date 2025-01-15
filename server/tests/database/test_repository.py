@@ -9,6 +9,7 @@ from src.domains import Challenge, ChallengeActivity, ChallengeStatus
 @pytest.mark.asyncio(loop_scope="session")
 async def test_create_challenge(challenge_repository: ChallengeRepository, user0_account: Account):
     challenge = Challenge.new(
+        nonce=1,
         challenger_address=user0_account.address,
         reward_amount=100,
         title="test",
@@ -35,6 +36,7 @@ async def test_create_challenge(challenge_repository: ChallengeRepository, user0
 @pytest.mark.asyncio(loop_scope="session")
 async def test_submit_proofs(challenge_repository: ChallengeRepository, user0_account: Account):
     challenge = Challenge.new(
+        nonce=1,
         challenger_address=user0_account.address,
         reward_amount=100,
         title="test",

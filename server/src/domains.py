@@ -4,10 +4,11 @@ import random
 from typing import Dict, List, Literal, Optional, Union
 from datetime import datetime
 import pytz
+from src.exceptions import ClientException
 from web3 import Web3
 from enum import Enum
 
-from src.utils import create_hash
+from src.utils import calculate_challenge_hash, create_hash
 
 
 @dataclass
@@ -36,6 +37,7 @@ class Challenge:
     
     @staticmethod
     def new(
+        nonce: int,
         challenger_address: str,
         reward_amount: int,
         title: str,
@@ -45,27 +47,26 @@ class Challenge:
         minimum_activity_count: int,
     ) -> "Challenge":
         if reward_amount <= 0:
-            raise ValueError("Reward amount must be greater than 0")
+            raise ClientException("Reward amount must be greater than 0")
         
         if minimum_activity_count <= 0:
-            raise ValueError("Minimum activity count must be greater than 0")
+            raise ClientException("Minimum activity count must be greater than 0")
         
         if type != "photos":
-            raise ValueError("Invalid challenge type")
+            raise ClientException("Invalid challenge type")
         
         if not Web3.is_address(challenger_address):
-            raise ValueError("Invalid challenger address")
+            raise ClientException("Invalid challenger address")
         challenger_address = Web3.to_checksum_address(challenger_address)
         
-        nonce = random.randint(0, 1000000)        
-        challenge_hash = create_hash(
-            nonce=nonce,
-            challenger_address=challenger_address,
-            reward_amount=reward_amount,
+        challenge_hash = calculate_challenge_hash(
             title=title,
-            type=type,
-            start_date=start_date.isoformat(),
-            end_date=end_date.isoformat(),
+            reward=reward_amount,
+            challenge_type=type,
+            challenger=challenger_address,
+            start_date=start_date,
+            end_date=end_date,
+            nonce=nonce,
             minimum_activity_count=minimum_activity_count,
         )
         

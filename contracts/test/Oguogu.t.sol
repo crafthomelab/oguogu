@@ -53,10 +53,20 @@ contract OGUOGUTest is Test {
         depositReward(user0, user0, 10e6);
 
         vm.startPrank(user0);
-        bytes32 chHash = bytes32(uint256(123));
+        bytes32 chHash = oguogu.calculateChallengeHash(
+            "challenge", 10e6, OGUOGU.ChallengeType.PHOTOS, user0, block.timestamp, block.timestamp + 1 days, 1, 10
+        );
         bytes memory challengeSignature = generateSignature(0x1, chHash);
-        uint256 challengeId =
-            oguogu.createChallenge(10e6, chHash, challengeSignature, block.timestamp, block.timestamp + 1 days, 10);
+        uint256 challengeId = oguogu.createChallenge(
+            "challenge",
+            10e6,
+            OGUOGU.ChallengeType.PHOTOS,
+            challengeSignature,
+            block.timestamp,
+            block.timestamp + 1 days,
+            1,
+            10
+        );
         vm.stopPrank();
 
         assertEq(oguogu.balanceOf(user0), 1);
@@ -74,7 +84,7 @@ contract OGUOGUTest is Test {
         ) = oguogu.getChallenge(challengeId);
 
         assertEq(reward, 10e6);
-        assertEq(challengeHash, bytes32(uint256(123)));
+        assertEq(challengeHash, chHash);
         assertEq(startDate, block.timestamp);
         assertEq(endDate, block.timestamp + 1 days);
         assertEq(minimumActivityCount, 10);
@@ -88,30 +98,79 @@ contract OGUOGUTest is Test {
         depositReward(user0, user0, 10e6);
 
         vm.startPrank(user0);
-        bytes32 chHash = bytes32(uint256(123));
+        bytes32 chHash = oguogu.calculateChallengeHash(
+            "challenge", 10e6, OGUOGU.ChallengeType.PHOTOS, user0, block.timestamp, block.timestamp + 1 days, 1, 10
+        );
         bytes memory challengeSignature = generateSignature(0x1, chHash);
 
-        oguogu.createChallenge(10e6, chHash, challengeSignature, block.timestamp, block.timestamp + 1 days, 10);
+        oguogu.createChallenge(
+            "challenge",
+            10e6,
+            OGUOGU.ChallengeType.PHOTOS,
+            challengeSignature,
+            block.timestamp,
+            block.timestamp + 1 days,
+            1,
+            10
+        );
         vm.expectRevert("Challenge already exists");
-        oguogu.createChallenge(10e6, chHash, challengeSignature, block.timestamp, block.timestamp + 1 days, 10);
+        oguogu.createChallenge(
+            "challenge",
+            10e6,
+            OGUOGU.ChallengeType.PHOTOS,
+            challengeSignature,
+            block.timestamp,
+            block.timestamp + 1 days,
+            1,
+            10
+        );
     }
 
     function test_block_already_passed_createChallenge() public {
         depositReward(user0, user0, 10e6);
 
+        bytes32 chHash = oguogu.calculateChallengeHash(
+            "challenge",
+            10e6,
+            OGUOGU.ChallengeType.PHOTOS,
+            user0,
+            block.timestamp - 2 days,
+            block.timestamp - 1 days,
+            1,
+            10
+        );
         vm.expectRevert("Invalid end date");
-        bytes32 chHash = bytes32(uint256(123));
         bytes memory challengeSignature = generateSignature(0x1, chHash);
-        oguogu.createChallenge(10e6, chHash, challengeSignature, block.timestamp - 2 days, block.timestamp - 1 days, 10);
+        oguogu.createChallenge(
+            "challenge",
+            10e6,
+            OGUOGU.ChallengeType.PHOTOS,
+            challengeSignature,
+            block.timestamp - 2 days,
+            block.timestamp - 1 days,
+            1,
+            10
+        );
     }
 
     function test_submitActivity() public {
         depositReward(user0, user0, 10e6);
 
         vm.startPrank(user0);
-        bytes32 chHash = bytes32(uint256(123));
+        bytes32 chHash = oguogu.calculateChallengeHash(
+            "challenge", 10e6, OGUOGU.ChallengeType.PHOTOS, user0, block.timestamp, block.timestamp + 1 days, 1, 10
+        );
         bytes memory challengeSignature = generateSignature(0x1, chHash);
-        oguogu.createChallenge(10e6, chHash, challengeSignature, block.timestamp, block.timestamp + 1 days, 10);
+        oguogu.createChallenge(
+            "challenge",
+            10e6,
+            OGUOGU.ChallengeType.PHOTOS,
+            challengeSignature,
+            block.timestamp,
+            block.timestamp + 1 days,
+            1,
+            10
+        );
 
         vm.stopPrank();
 
@@ -128,10 +187,20 @@ contract OGUOGUTest is Test {
         depositReward(user0, user0, 10e6);
 
         vm.startPrank(user0);
-        bytes32 chHash = bytes32(uint256(123));
+        bytes32 chHash = oguogu.calculateChallengeHash(
+            "challenge", 10e6, OGUOGU.ChallengeType.PHOTOS, user0, block.timestamp, block.timestamp + 1 days, 1, 10
+        );
         bytes memory challengeSignature = generateSignature(0x1, chHash);
-        uint256 challengeId =
-            oguogu.createChallenge(10e6, chHash, challengeSignature, block.timestamp, block.timestamp + 1 days, 10);
+        uint256 challengeId = oguogu.createChallenge(
+            "challenge",
+            10e6,
+            OGUOGU.ChallengeType.PHOTOS,
+            challengeSignature,
+            block.timestamp,
+            block.timestamp + 1 days,
+            1,
+            10
+        );
         vm.stopPrank();
 
         bytes32 activityHash = bytes32(uint256(12223));
@@ -149,10 +218,20 @@ contract OGUOGUTest is Test {
         depositReward(user0, user0, 10e6);
 
         vm.startPrank(user0);
-        bytes32 chHash = bytes32(uint256(123));
+        bytes32 chHash = oguogu.calculateChallengeHash(
+            "challenge", 10e6, OGUOGU.ChallengeType.PHOTOS, user0, block.timestamp, block.timestamp + 1 days, 1, 10
+        );
         bytes memory challengeSignature = generateSignature(0x1, chHash);
-        uint256 challengeId =
-            oguogu.createChallenge(10e6, chHash, challengeSignature, block.timestamp, block.timestamp + 1 days, 10);
+        uint256 challengeId = oguogu.createChallenge(
+            "challenge",
+            10e6,
+            OGUOGU.ChallengeType.PHOTOS,
+            challengeSignature,
+            block.timestamp,
+            block.timestamp + 1 days,
+            1,
+            10
+        );
 
         vm.stopPrank();
         vm.warp(block.timestamp + 1 days + 1 seconds);
@@ -171,10 +250,20 @@ contract OGUOGUTest is Test {
         depositReward(user0, user0, 10e6);
 
         vm.startPrank(user0);
-        bytes32 chHash = bytes32(uint256(123));
+        bytes32 chHash = oguogu.calculateChallengeHash(
+            "challenge", 10e6, OGUOGU.ChallengeType.PHOTOS, user0, block.timestamp, block.timestamp + 1 days, 1, 1
+        );
         bytes memory challengeSignature = generateSignature(0x1, chHash);
-        uint256 challengeId =
-            oguogu.createChallenge(10e6, chHash, challengeSignature, block.timestamp, block.timestamp + 1 days, 1);
+        uint256 challengeId = oguogu.createChallenge(
+            "challenge",
+            10e6,
+            OGUOGU.ChallengeType.PHOTOS,
+            challengeSignature,
+            block.timestamp,
+            block.timestamp + 1 days,
+            1,
+            1
+        );
 
         vm.stopPrank();
 
@@ -197,10 +286,20 @@ contract OGUOGUTest is Test {
         depositReward(user0, user0, 10e6);
 
         vm.startPrank(user0);
-        bytes32 chHash = bytes32(uint256(123));
+        bytes32 chHash = oguogu.calculateChallengeHash(
+            "challenge", 10e6, OGUOGU.ChallengeType.PHOTOS, user0, block.timestamp, block.timestamp + 1 days, 1, 1
+        );
         bytes memory challengeSignature = generateSignature(0x1, chHash);
-        uint256 challengeId =
-            oguogu.createChallenge(10e6, chHash, challengeSignature, block.timestamp, block.timestamp + 1 days, 1);
+        uint256 challengeId = oguogu.createChallenge(
+            "challenge",
+            10e6,
+            OGUOGU.ChallengeType.PHOTOS,
+            challengeSignature,
+            block.timestamp,
+            block.timestamp + 1 days,
+            1,
+            1
+        );
 
         vm.stopPrank();
 

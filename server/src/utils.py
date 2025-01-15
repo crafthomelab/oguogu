@@ -1,4 +1,6 @@
-from typing import Any, Dict, Union
+from datetime import datetime
+from typing import Any, Dict, Literal, Union
+from eth_typing import ChecksumAddress
 from fastapi import UploadFile
 from hexbytes import HexBytes
 from web3 import Web3, AsyncWeb3
@@ -7,12 +9,43 @@ from eth_account.messages import encode_defunct
 from web3.contract.contract import ContractFunction
 from web3.types import TxReceipt
 from typing import Optional
+import eth_abi
     
 def create_hash(**kwargs) -> bytes:
     """ 챌린지 해시를 생성합니다 """
     data_string = ''.join(f'{key}:{value}' for key, value in sorted(kwargs.items()))
     data_bytes = data_string.encode('utf-8')
     return Web3.to_hex(to_bytes32(Web3.keccak(data_bytes)))
+
+
+def calculate_challenge_hash(
+    title:str, 
+    reward:int, 
+    challenge_type: Literal["photos"], 
+    challenger:Union[str, ChecksumAddress], 
+    start_date:datetime, 
+    end_date:datetime, 
+    nonce:int, 
+    minimum_activity_count:int
+):
+    # Web3.py를 사용하여 이더리움 주소를 체크섬 주소로 변환
+    challenger = Web3.to_checksum_address(challenger)
+    
+    if challenge_type == 'photos':
+        challenge_type = 0
+    else:
+        raise ClientException("Invalid challenge type")
+    
+    # abi.encodePacked와 동일한 방식으로 데이터를 인코딩
+    encoded_data = eth_abi.encode(
+        ['string', 'uint256', 'uint8', 'address', 'uint32', 'uint256', 'uint256', 'uint8'],
+        [title, reward, challenge_type, challenger, nonce, int(start_date.timestamp()), int(end_date.timestamp()), minimum_activity_count]
+    )
+    
+    # keccak256 해시 생성
+    challenge_hash = Web3.keccak(encoded_data)
+    return Web3.to_hex(challenge_hash)
+
 
 
 def create_signature(signer: Account, hash_value: Union[bytes, str]) -> HexBytes:

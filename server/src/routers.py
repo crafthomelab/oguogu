@@ -34,6 +34,7 @@ class ChallengeDTO(BaseModel):
     """ Challenge DTO """
     hash: str = Field(description="Challenge Hash")
     id: Optional[int] = Field(description="Challenge ID")
+    nonce: int = Field(description="Nonce")
     status: str = Field(description="Challenge Status")
     
     challenger_address: str = Field(description="Challenger Address")
@@ -57,6 +58,7 @@ class ChallengeDTO(BaseModel):
         return ChallengeDTO(
             hash=challenge.hash,
             id=challenge.id,
+            nonce=challenge.nonce,
             status=challenge.status.value,
             challenger_address=challenge.challenger_address,
             reward_amount=str(int(challenge.reward_amount)),
@@ -94,9 +96,10 @@ class ActivityDTO(BaseModel):
 
 class ChallengeCreateDTO(BaseModel):
     """ Challenge Create DTO """
+    nonce: int = Field(description="Nonce")
     title: str = Field(description="Challenge Title")
-    type: str = Field(description="Challenge Type")
-    reward_amount: int = Field(description="Reward Amount")
+    type: Literal['photos'] = Field(description="Challenge Type")
+    reward_amount: str = Field(description="Reward Amount")
     start_date: datetime = Field(description="Challenge Start Date")
     end_date: datetime = Field(description="Challenge End Date")
     minimum_activity_count: int = Field(description="Minimum Activity Count")
@@ -174,8 +177,9 @@ async def create_challenge(
     registry: ChallengeRegistryService = RegistryDependency
 ) -> ChallengeSignatureDTO:
     challenge = Challenge.new(
+        nonce=challenge.nonce,
         challenger_address=user_address,
-        reward_amount=challenge.reward_amount,
+        reward_amount=int(challenge.reward_amount),
         title=challenge.title,
         type=challenge.type,
         start_date=challenge.start_date,
