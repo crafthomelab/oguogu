@@ -131,7 +131,7 @@ router = APIRouter()
 security = HTTPBearer()
 
 
-@router.get("/")
+@router.get("/", include_in_schema=False)
 async def read_root():
     return {"message": "Oguogu API Server"}
 
@@ -139,12 +139,13 @@ async def read_root():
 def authenticate_by_signature(
     credentials: Annotated[HTTPAuthorizationCredentials, Depends(security)]
 ) -> ChecksumAddress:
+    print("credentials: ", credentials)
     token = credentials.credentials
     message, signature = token.split(":")
     return recover_address(message, signature)
 
 
-@router.get("/challenges/{challenge_hash}")
+@router.get("/challenges/{challenge_hash}", operation_id="get_challenge")
 @inject
 async def get_challenge(
     user_address: Annotated[ChecksumAddress, Depends(authenticate_by_signature)],
@@ -155,7 +156,7 @@ async def get_challenge(
     return ChallengeDTO.from_domain(challenge)
 
 
-@router.get("/challenges")
+@router.get("/challenges", operation_id="get_challenges")
 @inject
 async def get_challenges(
     user_address: Annotated[ChecksumAddress, Depends(authenticate_by_signature)],
@@ -164,7 +165,7 @@ async def get_challenges(
     challenges = await registry.get_active_challenges(user_address)
     return ChallengeListDTO.from_domain(challenges)
 
-@router.post("/challenges")
+@router.post("/challenges", operation_id="create_challenge")
 @inject
 async def create_challenge(
     user_address: Annotated[ChecksumAddress, Depends(authenticate_by_signature)],
@@ -193,7 +194,7 @@ async def create_challenge(
     return ChallengeSignatureDTO.from_domain(signature)
 
 
-@router.post("/challenges/{challenge_hash}/register")
+@router.post("/challenges/{challenge_hash}/register", operation_id="register_challenge")
 @inject
 async def register_challenge(
     challenge_hash: str,
@@ -204,7 +205,7 @@ async def register_challenge(
     return OkResponse(ok=True)
 
 
-@router.post("/challenges/{challenge_hash}/photo-activities")
+@router.post("/challenges/{challenge_hash}/photo-activities", operation_id="register_photo_activity")
 @inject
 async def register_photo_activity(
     challenge_hash: str,
@@ -230,7 +231,7 @@ async def register_photo_activity(
     return ActivityHashDTO(activity_hash=activity.activity_hash)
 
 
-@router.get("/challenges/{challenge_hash}/photo-activities/{activity_hash}")
+@router.get("/challenges/{challenge_hash}/photo-activities/{activity_hash}", operation_id="get_photo_activity")
 @inject
 async def get_photo_activity(
     challenge_hash: str,
@@ -262,7 +263,7 @@ async def get_photo_activity(
     )
 
 
-@router.post("/challenges/{challenge_hash}/photo-activities/{activity_hash}")
+@router.post("/challenges/{challenge_hash}/photo-activities/{activity_hash}", operation_id="submit_photo_activity")
 @inject
 async def submit_photo_activity(
     challenge_hash: str,
@@ -276,7 +277,7 @@ async def submit_photo_activity(
     return OkResponse(ok=True)
 
 
-@router.post("/challenges/{challenge_hash}/complete")
+@router.post("/challenges/{challenge_hash}/complete", operation_id="complete_challenge")
 @inject
 async def complete_challenge(
     challenge_hash: str,
