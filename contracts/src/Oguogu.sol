@@ -36,6 +36,7 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
     mapping(address => uint256) private _userReserves;
     mapping(address => uint256) private _userAllocatedRewards;
     mapping(address => uint256) private _withdrawableUnlockTime;
+    mapping(address => uint256) private _userAccumulatedReserves;
 
     mapping(uint256 => Challenge) private _challenges;
     mapping(bytes32 => address) private _challengeHashes;
@@ -106,6 +107,7 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
 
         unchecked {
             _userReserves[challenger] += amount;
+            _userAccumulatedReserves[challenger] += amount;
             if (challenger == msg.sender) {
                 _withdrawableUnlockTime[challenger] = block.timestamp + 28 days;
             }
@@ -315,5 +317,9 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
 
     function challengeHashes(bytes32 challengeHash) external view returns (address) {
         return _challengeHashes[challengeHash];
+    }
+
+    function userAccumulatedReserves(address challenger) external view returns (uint256) {
+        return _userAccumulatedReserves[challenger];
     }
 }
