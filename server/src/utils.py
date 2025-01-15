@@ -9,7 +9,7 @@ from eth_account.messages import encode_defunct
 from web3.contract.contract import ContractFunction
 from web3.types import TxReceipt
 from typing import Optional
-import eth_abi
+from eth_abi.packed import encode_packed
     
 def create_hash(**kwargs) -> bytes:
     """ 챌린지 해시를 생성합니다 """
@@ -37,9 +37,9 @@ def calculate_challenge_hash(
         raise ClientException("Invalid challenge type")
     
     # abi.encodePacked와 동일한 방식으로 데이터를 인코딩
-    encoded_data = eth_abi.encode(
-        ['string', 'uint256', 'uint8', 'address', 'uint32', 'uint256', 'uint256', 'uint8'],
-        [title, reward, challenge_type, challenger, nonce, int(start_date.timestamp()), int(end_date.timestamp()), minimum_activity_count]
+    encoded_data = encode_packed(
+        ['string', 'uint256', 'uint8', 'address', 'uint256', 'uint256', 'uint32', 'uint8'],
+        [title, reward, challenge_type, challenger, int(start_date.timestamp()), int(end_date.timestamp()), nonce, minimum_activity_count]
     )
     
     # keccak256 해시 생성

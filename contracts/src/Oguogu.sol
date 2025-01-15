@@ -359,19 +359,12 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
         return keccak256(
             abi.encodePacked(
                 title,
-                " ",
                 reward,
-                " ",
                 challengeType,
-                " ",
                 challenger,
-                " ",
-                nonce,
-                " ",
                 startDate,
-                " ",
                 endDate,
-                " ",
+                nonce,
                 minimumActivityCount
             )
         );
