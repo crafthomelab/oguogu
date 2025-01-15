@@ -4,11 +4,12 @@ from eth_account import Account
 import pytest
 
 import pytz
-from src.domains import Challenge, ChallengeActivity
+from src.domains import Challenge, ChallengeActivity, ChallengeType
 from src.registry.challenge import ChallengeRegistryService
 from src.registry.grader import ActivityGraderResponse
 from src.registry.activity import ActivityRegistryService
 from src.registry.transaction import TransactionManager
+from src.utils import calculate_challenge_hash
 from web3 import Web3
 
 class AsyncMock(MagicMock):
@@ -25,6 +26,90 @@ def mock_proof_registry_service(activity_registry_service: ActivityRegistryServi
 
 
 @pytest.mark.asyncio(loop_scope="session")
+async def test_calculate_challenge_hash(
+    web3: Web3,
+    user0_account: Account,
+    transaction_manager: TransactionManager,
+):
+    nonce = 1
+    reward_amount = Web3.to_wei(1, 'ether')
+    challenger = user0_account.address
+    title = "Test Challenge"
+    challenge_type = ChallengeType.photos
+    challenge_type_index = 0
+    start_date = datetime.now(pytz.utc)
+    end_date = datetime.now(pytz.utc) + timedelta(days=1)
+    minimum_activity_count = 1
+    
+    challenge_hash = calculate_challenge_hash(
+        title=title,
+        reward=reward_amount,
+        challenge_type=challenge_type,        
+        challenger=challenger,
+        start_date=start_date,
+        end_date=end_date,
+        nonce=nonce,
+        minimum_activity_count=minimum_activity_count,
+    )
+    
+    result = transaction_manager.oguogu_contract().functions.calculateChallengeHash(
+        title,
+        reward_amount,
+        challenge_type_index,
+        challenger,
+        int(start_date.timestamp()),
+        int(end_date.timestamp()),
+        nonce,
+        minimum_activity_count,
+    ).call()
+    result = Web3.to_hex(result)
+    
+    assert challenge_hash == result
+    
+@pytest.mark.asyncio(loop_scope="session")
+async def test_calculate_challenge_hash_2(
+    web3: Web3,
+    user0_account: Account,
+    transaction_manager: TransactionManager,
+):
+    nonce = 1231
+    reward_amount = Web3.to_wei(1, 'ether')
+    challenger = user0_account.address
+    title = "Test Chal1212312lenge"
+    challenge_type = ChallengeType.photos
+    challenge_type_index = 0
+    start_date = datetime.now(pytz.utc)
+    end_date = datetime.now(pytz.utc) + timedelta(days=2)
+    minimum_activity_count = 5
+    
+    challenge_hash = calculate_challenge_hash(
+        title=title,
+        reward=reward_amount,
+        challenge_type=challenge_type,        
+        challenger=challenger,
+        start_date=start_date,
+        end_date=end_date,
+        nonce=nonce,
+        minimum_activity_count=minimum_activity_count,
+    )
+    
+    result = transaction_manager.oguogu_contract().functions.calculateChallengeHash(
+        title,
+        reward_amount,
+        challenge_type_index,
+        challenger,
+        int(start_date.timestamp()),
+        int(end_date.timestamp()),
+        nonce,
+        minimum_activity_count,
+    ).call()
+    result = Web3.to_hex(result)
+    
+    assert challenge_hash == result    
+    
+
+
+@pytest.mark.asyncio(loop_scope="session")
 async def test_submit_proof(
     challenge_registry_service: ChallengeRegistryService,
     mock_proof_registry_service: ActivityRegistryService,
@@ -38,10 +123,11 @@ async def test_submit_proof(
     
     # 2. 챌린지 정의하기
     given_challenge = Challenge.new(
+        nonce=2,
         challenger_address=user0_account.address,
         reward_amount=Web3.to_wei(1, 'ether'),
         title="Test Challenge",
-        type="photos",
+        type='photos',
         start_date=datetime.now(pytz.utc),
         end_date=datetime.now(pytz.utc) + timedelta(days=1),
         minimum_activity_count=1,
@@ -52,12 +138,14 @@ async def test_submit_proof(
     
     # 4. 챌린지와 함께 블록체인에 저장하기
     func = transaction_manager.oguogu_contract().functions.createChallenge(
-        reward=given_challenge.reward_amount,
-        challengeHash=given_challenge.hash,
-        challengeSignature=challenge_signature.signature,
-        startDate=int(given_challenge.start_date.timestamp()),
-        endDate=int(given_challenge.end_date.timestamp()),
-        minimumActivityCount=given_challenge.minimum_activity_count,
+            title=given_challenge.title,
+            reward=given_challenge.reward_amount,
+            challengeType=given_challenge.type.value,
+            challengeSignature=challenge_signature.signature,
+            startDate=int(given_challenge.start_date.timestamp()),
+            endDate=int(given_challenge.end_date.timestamp()),
+            nonce=given_challenge.nonce,
+            minimumActivityCount=given_challenge.minimum_activity_count,
     )
     txreceipt = await transaction_manager.asend_transaction(func, user0_account)
     

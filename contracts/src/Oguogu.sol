@@ -41,13 +41,20 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
     mapping(uint256 => Challenge) private _challenges;
     mapping(bytes32 => address) private _challengeHashes;
 
+    enum ChallengeType {
+        PHOTOS,
+        URL
+    }
+
     struct Challenge {
         bytes32 challengeHash; // challenge hash
         bytes32[] activityHashes; // activity hashes
         uint256 reward; // reward amount
         uint256 startDate; // challenge start date
         uint256 endDate; // challenge end date
-        uint64 minimumActivityCount; // minimum activity count
+        ChallengeType challengeType; // challenge type
+        uint32 nonce; // nonce
+        uint8 minimumActivityCount; // minimum activity count
         bool isClosed; // Challenge closure status
     }
 
@@ -141,12 +148,14 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
     }
 
     function createChallenge(
+        string memory title,
         uint256 reward,
-        bytes32 challengeHash,
+        ChallengeType challengeType,
         bytes memory challengeSignature,
         uint256 startDate,
         uint256 endDate,
-        uint64 minimumActivityCount
+        uint32 nonce,
+        uint8 minimumActivityCount
     ) external returns (uint256) {
         /**
          * @notice Creates a new challenge(NFT).
@@ -163,19 +172,31 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
         require(startDate < endDate, "Invalid start date");
         require(block.timestamp < endDate, "Invalid end date");
         require(minimumActivityCount > 0, "Invalid minimum activity count");
+
+        bytes32 challengeHash = calculateChallengeHash(
+            title, reward, challengeType, msg.sender, startDate, endDate, nonce, minimumActivityCount
+        );
         require(_challengeHashes[challengeHash] == address(0), "Challenge already exists");
+        require(verifySignature(owner(), challengeHash, challengeSignature), "Invalid signature");
 
         _challengeHashes[challengeHash] = msg.sender;
-
-        require(verifySignature(owner(), challengeHash, challengeSignature), "Invalid signature");
 
         unchecked {
             _userAllocatedRewards[msg.sender] += reward;
             require(_userAllocatedRewards[msg.sender] <= _userReserves[msg.sender], "Insufficient balance");
         }
 
-        _challenges[_challengeId] =
-            Challenge(challengeHash, new bytes32[](0), reward, startDate, endDate, minimumActivityCount, false);
+        _challenges[_challengeId] = Challenge(
+            challengeHash,
+            new bytes32[](0),
+            reward,
+            startDate,
+            endDate,
+            challengeType,
+            nonce,
+            minimumActivityCount,
+            false
+        );
 
         _safeMint(msg.sender, _challengeId);
         emit ChallengeCreated(_challengeId, msg.sender, challengeHash);
@@ -323,5 +344,20 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
 
     function userAccumulatedReserves(address challenger) external view returns (uint256) {
         return _userAccumulatedReserves[challenger];
+    }
+
+    function calculateChallengeHash(
+        string memory title,
+        uint256 reward,
+        ChallengeType challengeType,
+        address challenger,
+        uint256 startDate,
+        uint256 endDate,
+        uint32 nonce,
+        uint8 minimumActivityCount
+    ) public pure returns (bytes32) {
+        return keccak256(
+            abi.encodePacked(title, reward, challengeType, challenger, startDate, endDate, nonce, minimumActivityCount)
+        );
     }
 }

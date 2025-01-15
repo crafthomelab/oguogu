@@ -19,7 +19,7 @@ class ChallengeRepository:
         async with self.session_factory() as session:
             stmt = (
                 select(ChallengeEntity)
-                .options(selectinload(ChallengeEntity.acitivties))
+                .options(selectinload(ChallengeEntity.activities))
                 .where(ChallengeEntity.id == challenge_id)
             )
             result = await session.execute(stmt)
@@ -51,7 +51,7 @@ class ChallengeRepository:
         async with self.session_factory() as session:
             stmt = (
                 select(ChallengeEntity)
-                .options(selectinload(ChallengeEntity.acitivties))
+                .options(selectinload(ChallengeEntity.activities))
                 .where(ChallengeEntity.challenger_address == challenger_address)
             )
             
