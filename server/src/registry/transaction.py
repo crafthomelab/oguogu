@@ -2,6 +2,7 @@ import asyncio
 from datetime import datetime
 import time
 from typing import List, Optional
+from hexbytes import HexBytes
 import pytz
 from src.abis.constants import OGUOGU_EVENT_ABI
 from src.settings import Settings
@@ -48,7 +49,7 @@ class TransactionManager:
                 continue
         return events
     
-    def create_signature(self, challenge_hash: str, account: Account=None) -> str:
+    def create_signature(self, challenge_hash: str, account: Account=None) -> HexBytes:
         logger.info(f"create_signature {challenge_hash}")
         account = self.operator if account is None else account
         return create_signature(account, challenge_hash)

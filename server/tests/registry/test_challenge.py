@@ -30,7 +30,7 @@ async def test_open_challenge_scenario(
         type="photos",
         start_date=datetime.now(pytz.utc),
         end_date=datetime.now(pytz.utc) + timedelta(days=1),
-        minimum_proof_count=1,
+        minimum_activity_count=1,
     )
     
     # 3. 챌린지 서명하기
@@ -46,7 +46,7 @@ async def test_open_challenge_scenario(
             challengeSignature=challenge_signature.signature,
             startDate=int(given_challenge.start_date.timestamp()),
             endDate=int(given_challenge.end_date.timestamp()),
-            minimumProofCount=given_challenge.minimum_proof_count,
+            minimumActivityCount=given_challenge.minimum_activity_count,
         )
     )
     

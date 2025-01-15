@@ -1,11 +1,13 @@
 from contextlib import AbstractContextManager
 from typing import Callable, List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update
+from sqlalchemy import insert, select, update
 from sqlalchemy.orm import selectinload
 
-from src.database.entity import ChallengeEntity, ChallengeProofEntity
-from src.domains import Challenge, ChallengeProof, ChallengeStatus
+from src.database.entity import ChallengeEntity, ChallengeActivityEntity
+from src.domains import Challenge, ChallengeActivity, ChallengeStatus
+from sqlalchemy.exc import IntegrityError
+from src.exceptions import ClientException
 
 
 class ChallengeRepository:
@@ -17,7 +19,7 @@ class ChallengeRepository:
         async with self.session_factory() as session:
             stmt = (
                 select(ChallengeEntity)
-                .options(selectinload(ChallengeEntity.proofs))
+                .options(selectinload(ChallengeEntity.acitivties))
                 .where(ChallengeEntity.id == challenge_id)
             )
             result = await session.execute(stmt)
@@ -31,7 +33,7 @@ class ChallengeRepository:
         async with self.session_factory() as session:
             stmt = (
                 select(ChallengeEntity)
-                .options(selectinload(ChallengeEntity.proofs))
+                .options(selectinload(ChallengeEntity.activities))
                 .where(ChallengeEntity.hash == challenge_hash)
             )
             result = await session.execute(stmt)
@@ -49,7 +51,7 @@ class ChallengeRepository:
         async with self.session_factory() as session:
             stmt = (
                 select(ChallengeEntity)
-                .options(selectinload(ChallengeEntity.proofs))
+                .options(selectinload(ChallengeEntity.acitivties))
                 .where(ChallengeEntity.challenger_address == challenger_address)
             )
             
@@ -98,13 +100,52 @@ class ChallengeRepository:
             await session.execute(stmt)
             await session.commit()
             
-    async def add_proof(self, challenge_hash: str, proof: ChallengeProof) -> None:
-        """ 챌린지 증명 추가하기 """
-        async with self.session_factory() as session:
-            entity = ChallengeProofEntity.from_domain(challenge_hash, proof)
-            session.add(entity)
-            await session.commit()
             
+    async def get_activity(self, challenge_hash: str, activity_hash: str) -> ChallengeActivity:
+        """ 챌린지 증명 조회하기 """
+        async with self.session_factory() as session:
+            stmt = select(ChallengeActivityEntity).where(
+                ChallengeActivityEntity.challenge_hash == challenge_hash, 
+                ChallengeActivityEntity.activity_hash == activity_hash
+            )
+            result = await session.execute(stmt)
+            activity_entity = result.scalar_one_or_none()
+            if activity_entity:
+                return activity_entity.to_domain()
+            raise ClientException(message="존재하지 않은 제출물이에요.")
+            
+
+    async def add_activity(self, challenge_hash: str, activity: ChallengeActivity) -> None:
+        """ 챌린지 증명 제출하기 """
+        async with self.session_factory() as session:
+            entity = ChallengeActivityEntity.from_domain(challenge_hash, activity)
+            session.add(entity)
+            try:
+                await session.commit()  
+            except IntegrityError:
+                await session.rollback()
+                raise ClientException(message="이미 동일한 것이 제출되었어요.")
+
+
+    async def complete_activity(self, challenge_hash: str, activity: ChallengeActivity) -> None:
+        """ 챌린지 증명 완료하기 """
+        async with self.session_factory() as session:
+            stmt = (
+                update(ChallengeActivityEntity)
+                .filter(ChallengeActivityEntity.challenge_hash == challenge_hash, 
+                        ChallengeActivityEntity.activity_hash == activity.activity_hash)
+                .values(
+                    activity_transaction=activity.activity_transaction, 
+                    activity_date=activity.activity_date
+                )
+            )
+            await session.execute(stmt)
+            try:
+                await session.commit()  
+            except IntegrityError:
+                await session.rollback()
+                raise ClientException(message="이미 동일한 것이 제출되었어요.")
+                        
 
     async def _exist_challenge(self, challenge_hash: str, session: AsyncSession) -> bool:
         stmt = select(ChallengeEntity).where(ChallengeEntity.hash == challenge_hash)
