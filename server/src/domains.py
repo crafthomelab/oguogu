@@ -26,9 +26,9 @@ class Challenge:
     
     start_date: datetime
     end_date: datetime
-    minimum_proof_count: int
+    minimum_activity_count: int
 
-    proofs: List["ChallengeProof"]
+    activities: List["ChallengeActivity"]
     
     payment_transaction: Optional[str] = None
     payment_reward: int = 0
@@ -42,13 +42,13 @@ class Challenge:
         type: Literal["photos"],
         start_date: datetime,
         end_date: datetime,
-        minimum_proof_count: int,
+        minimum_activity_count: int,
     ) -> "Challenge":
         if reward_amount <= 0:
             raise ValueError("Reward amount must be greater than 0")
         
-        if minimum_proof_count <= 0:
-            raise ValueError("Minimum proof count must be greater than 0")
+        if minimum_activity_count <= 0:
+            raise ValueError("Minimum activity count must be greater than 0")
         
         if type != "photos":
             raise ValueError("Invalid challenge type")
@@ -66,7 +66,7 @@ class Challenge:
             type=type,
             start_date=start_date.isoformat(),
             end_date=end_date.isoformat(),
-            minimum_proof_count=minimum_proof_count,
+            minimum_activity_count=minimum_activity_count,
         )
         
         return Challenge(
@@ -80,17 +80,17 @@ class Challenge:
             type=type,
             start_date=start_date,
             end_date=end_date,
-            minimum_proof_count=minimum_proof_count,
-            proofs=[],
+            minimum_activity_count=minimum_activity_count,
+            activities=[],
             payment_transaction=None,
             complete_date=None,
         )
         
-    def available_to_submit_proof(self) -> bool:
+    def available_to_submit_activity(self) -> bool:
         return (
             self.status == ChallengeStatus.OPEN
             and self.end_date >= datetime.now(pytz.utc)
-            and len(self.proofs) < self.minimum_proof_count
+            and len(self.activities) < self.minimum_activity_count
         )   
         
     def available_to_complete(self) -> bool:
@@ -98,7 +98,7 @@ class Challenge:
         if self.status != ChallengeStatus.OPEN:
             return False
         
-        if len(self.proofs) >= self.minimum_proof_count:
+        if len(self.activities) >= self.minimum_activity_count:
             return True
         
         return self.end_date < datetime.now(pytz.utc)
@@ -139,22 +139,30 @@ class ChallengeStatus(Enum):
 
 
 @dataclass
-class ChallengeProof:
-    """ 챌린지 수행 증명 자료 """
-    proof_hash: str
+class ChallengeActivity:
+    """ 챌린지 수행 활동 """
+    activity_hash: str
     content: Dict[str, any]
-    proof_date: datetime
+    
+    activity_transaction: Optional[str] = None
+    activity_date: Optional[datetime] = None
     
     @staticmethod
-    def new(content: Dict[str, any], proof_date: datetime=None) -> "ChallengeProof":
-        if proof_date is None:
-            proof_date = datetime.now(pytz.utc)
-        proof_hash = create_hash(**content)
-        return ChallengeProof(
-            proof_hash=proof_hash, 
+    def new(content: Dict[str, any]) -> "ChallengeActivity":
+        activity_hash = create_hash(**content)
+        return ChallengeActivity(
+            activity_hash=activity_hash, 
             content=content,
-            proof_date=proof_date
+            activity_transaction=None,
+            activity_date=None,
         )
+        
+    def is_completed(self) -> bool:
+        return self.activity_transaction is not None
+        
+    def complete(self, activity_transaction: str, activity_date: datetime):
+        self.activity_transaction = activity_transaction
+        self.activity_date = activity_date
 
 @dataclass
 class ChallengeSignature:

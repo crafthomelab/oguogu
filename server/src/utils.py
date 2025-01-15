@@ -94,9 +94,9 @@ async def asend_transaction(
     return tx_receipt
 
 
-async def generate_image_proof(proof_file: UploadFile) -> dict:
-    content_type = proof_file.content_type
-    image_bytes = await proof_file.read()
+async def generate_photo_activity(activity_file: UploadFile) -> dict:
+    content_type = activity_file.content_type
+    image_bytes = await activity_file.read()
     image = encode_image_url(content_type, image_bytes)
     screenshot_date = extract_screenshot_date(image_bytes)
     return {

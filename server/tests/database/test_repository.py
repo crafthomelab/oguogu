@@ -3,7 +3,7 @@ from eth_account import Account
 import pytest
 import pytz
 from src.database.repository import ChallengeRepository
-from src.domains import Challenge, ChallengeProof, ChallengeStatus
+from src.domains import Challenge, ChallengeActivity, ChallengeStatus
 
 
 @pytest.mark.asyncio(loop_scope="session")
@@ -15,7 +15,7 @@ async def test_create_challenge(challenge_repository: ChallengeRepository, user0
         type="photos",
         start_date=datetime.now(pytz.utc),
         end_date=datetime.now(pytz.utc) + timedelta(days=1),
-        minimum_proof_count=1,
+        minimum_activity_count=1,
     )
     
     await challenge_repository.create_challenge(challenge)
@@ -29,7 +29,7 @@ async def test_create_challenge(challenge_repository: ChallengeRepository, user0
     assert result.title == challenge.title
     assert result.type == challenge.type
     assert result.end_date == challenge.end_date
-    assert result.minimum_proof_count == challenge.minimum_proof_count
+    assert result.minimum_activity_count == challenge.minimum_activity_count
     
 
 @pytest.mark.asyncio(loop_scope="session")
@@ -41,7 +41,7 @@ async def test_submit_proofs(challenge_repository: ChallengeRepository, user0_ac
         type="photos",
         start_date=datetime.now(pytz.utc),
         end_date=datetime.now(pytz.utc) + timedelta(days=1),
-        minimum_proof_count=2,
+        minimum_activity_count=2,
     )
     
     await challenge_repository.create_challenge(challenge)
@@ -49,14 +49,14 @@ async def test_submit_proofs(challenge_repository: ChallengeRepository, user0_ac
     
     await challenge_repository.open_challenge(challenge)
     
-    proof0 = ChallengeProof.new({"test": "test0"}, datetime.now(pytz.utc))
-    proof1 = ChallengeProof.new({"test": "test1"}, datetime.now(pytz.utc))
+    activity0 = ChallengeActivity.new({"test": "test0"})
+    activity1 = ChallengeActivity.new({"test": "test1"})
     
-    await challenge_repository.add_proof(challenge.hash, proof0)
-    await challenge_repository.add_proof(challenge.hash, proof1)
+    await challenge_repository.add_activity(challenge.hash, activity0)
+    await challenge_repository.add_activity(challenge.hash, activity1)
     
     challenge = await challenge_repository.get_challenge(challenge.hash)
-    assert len(challenge.proofs) == 2
+    assert len(challenge.activities) == 2
     
     challenge.success("0x1234567890", 10000)
     await challenge_repository.complete_challenge(challenge)

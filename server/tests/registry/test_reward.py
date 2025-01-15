@@ -3,19 +3,19 @@ from eth_account import Account
 import pytest
 
 import pytz
-from src.domains import Challenge, ChallengeStatus
+from src.domains import Challenge, ChallengeActivity, ChallengeStatus
 from src.registry.challenge import ChallengeRegistryService
-from src.registry.proof import ProofRegistryService
+from src.registry.activity import ActivityRegistryService
 from src.registry.reward import ChallengeRewardService
 from src.registry.transaction import TransactionManager
 from web3 import Web3
 from web3.contract import Contract
 
 @pytest.mark.asyncio(loop_scope="session")
-async def test_submit_proof(
+async def test_submit_activity(
     challenge_reward_service: ChallengeRewardService,
     challenge_registry_service: ChallengeRegistryService,
-    mock_proof_registry_service: ProofRegistryService,
+    mock_activity_registry_service: ActivityRegistryService,
     transaction_manager: TransactionManager,
     test_usdt_contract: Contract,
     user0_account: Account,
@@ -34,7 +34,7 @@ async def test_submit_proof(
         type="photos",
         start_date=datetime.now(pytz.utc),
         end_date=datetime.now(pytz.utc) + timedelta(days=1),
-        minimum_proof_count=1,
+        minimum_activity_count=1,
     )
     
     # 3. 챌린지 서명하기
@@ -47,7 +47,7 @@ async def test_submit_proof(
         challengeSignature=challenge_signature.signature,
         startDate=int(given_challenge.start_date.timestamp()),
         endDate=int(given_challenge.end_date.timestamp()),
-        minimumProofCount=given_challenge.minimum_proof_count,
+        minimumActivityCount=given_challenge.minimum_activity_count,
     )
     txreceipt = await transaction_manager.asend_transaction(func, user0_account)
     
@@ -58,25 +58,21 @@ async def test_submit_proof(
     output_challenge = await challenge_registry_service.get_challenge(given_challenge.hash)
     
     # 7. 유저가 챌린지 증명하기
-    proof_content = {
+    activity_content = {
         "content_type": "image/jpeg",
         "image_bytes": "test2"
     }    
-    proof_hash = mock_proof_registry_service.calculate_proof_hash(proof_content)
-    proof_signature = transaction_manager.create_signature(proof_hash, user0_account).to_0x_hex()
+    activity = ChallengeActivity.new(activity_content)
+    activity_signature = transaction_manager.create_signature(activity.activity_hash, user0_account).to_0x_hex()
 
     # 8. 챌린지 증명 검증하기
-    await mock_proof_registry_service.verify_proof(
-        challenge=output_challenge,
-        proof_content=proof_content,
-        proof_signature=proof_signature
-    )
+    await mock_activity_registry_service.register_activity(challenge=output_challenge, activity=activity)
     
     # 9. 챌린지 증명 제출하기
-    await mock_proof_registry_service.submit_proof(
+    await mock_activity_registry_service.submit_activity(
         challenge=output_challenge,
-        proof_content=proof_content,
-        proof_signature=proof_signature
+        activity_hash=activity.activity_hash,
+        activity_signature=activity_signature
     )
     # 10. 챌린지 완료하기
     before_balance = test_usdt_contract.functions.balanceOf(user0_account.address).call()

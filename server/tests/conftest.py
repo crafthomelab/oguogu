@@ -3,8 +3,8 @@ import pytest
 from eth_account import Account
 
 from src.registry.container import RegistryContainer
-from src.registry.grader import ProofGraderResponse
-from src.registry.proof import ProofRegistryService
+from src.registry.grader import ActivityGraderResponse
+from src.registry.activity import ActivityRegistryService
 from src.registry.reward import ChallengeRewardService
 from src.utils import send_transaction
 from web3 import Web3
@@ -212,8 +212,8 @@ def challenge_registry_service(local_registry_container):
     return local_registry_container.registry()
 
 @pytest.fixture(scope='session')
-def proof_registry_service(local_registry_container) -> ProofRegistryService:
-    return local_registry_container.proof()
+def activity_registry_service(local_registry_container) -> ActivityRegistryService:
+    return local_registry_container.activity()
 
 @pytest.fixture(scope='session')
 def transaction_manager(local_registry_container):
@@ -224,12 +224,12 @@ class AsyncMock(MagicMock):
         return super(AsyncMock, self).__call__(*args, **kwargs)
 
 @pytest.fixture(scope='session')
-def mock_proof_registry_service(proof_registry_service: ProofRegistryService) -> ProofRegistryService:
-    proof_registry_service.grader.grade_proof = AsyncMock(return_value=ProofGraderResponse(
+def mock_activity_registry_service(activity_registry_service: ActivityRegistryService) -> ActivityRegistryService:
+    activity_registry_service.grader.grade_activity = AsyncMock(return_value=ActivityGraderResponse(
         is_correct=True,
         message="Good job!"
     ))
-    return proof_registry_service
+    return activity_registry_service
 
 @pytest.fixture(scope='session')
 def challenge_reward_service(local_registry_container) -> ChallengeRewardService:

@@ -1,5 +1,5 @@
 from typing import Dict
-from src.domains import Challenge
+from src.domains import Challenge, ChallengeActivity
 from src.settings import Settings
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
@@ -9,7 +9,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-class ProofGraderResponse(BaseModel):
+class ActivityGraderResponse(BaseModel):
     is_correct: bool = Field(
         description="제출한 자료가 챌린지 조건을 만족하는지 여부"
     )
@@ -36,8 +36,7 @@ SYSTEM_PROMPT = """당신은 사용자가 챌린지를 수행했는지를 확인
 당신은 챌린지 조건을 만족하지 않는 증명 자료일 경우, 왜 만족하지 않았는지 설명해야 합니다.
 
 챌린지 정보는 아래와 같은 포맷으로 제공됩니다.
-제목: <챌린지 제목>
-설명: <어떤 챌린지이며, 어떤 식으로 평가하면 되는지 서술>
+목표: <챌린지 목표>
 기간: <시작일자> ~ <종료일자>
 
 ----------
@@ -45,7 +44,7 @@ SYSTEM_PROMPT = """당신은 사용자가 챌린지를 수행했는지를 확인
 촬영 일자: <제공된 이미지의 EXIF 데이터 내 촬영 일자, 이미지에 따라 제공되지 않을 수 있음>
 """
 
-class ProofGrader:
+class ActivityGrader:
     def __init__(self, settings: Settings):
         self.settings = settings
         
@@ -55,7 +54,7 @@ class ProofGrader:
             temperature=settings.OPENAI_MODEL_TEMPERATURE
         )
         
-        model = model.with_structured_output(ProofGraderResponse)
+        model = model.with_structured_output(ActivityGraderResponse)
         prompt = ChatPromptTemplate(messages=[
             SystemMessage(content=SYSTEM_PROMPT),
             HumanMessagePromptTemplate.from_template(
@@ -64,8 +63,7 @@ class ProofGrader:
                         "type": "text", 
                         "text": 
                             "챌린지 정보\n"
-                            "제목: {title}\n"
-                            "설명: {description}\n"
+                            "목표: {title}\n"
                             "기간: {start_date} ~ {end_date}\n"
                             "----------\n"
                             "증명 자료\n"
@@ -78,27 +76,26 @@ class ProofGrader:
         
         self.chain = prompt | model
         
-    async def grade_proof(
+    async def grade_activity(
         self, 
         challenge: Challenge,
-        proof_content: Dict[str, any],
-    ) -> ProofGraderResponse:
+        activity: ChallengeActivity,
+    ) -> ActivityGraderResponse:
         if challenge.type == "photos":
-            return await self.grade_photos_proof(challenge, proof_content)
+            return await self.grade_photos_activity(challenge, activity)
         else:   
-            raise ValueError(f"Unsupported proof type: {challenge.type}"  )
+            raise ValueError(f"Unsupported activity type: {challenge.type}"  )
 
-    async def grade_photos_proof(
+    async def grade_photos_activity(
         self, 
         challenge: Challenge,
-        proof_content: Dict[str, any],
-    ) -> ProofGraderResponse:
-        logger.info(f"Grading proof for challenge {challenge.hash}")
+        activity: ChallengeActivity,
+    ) -> ActivityGraderResponse:
+        logger.info(f"Grading photos activity for challenge {challenge.hash}")
         return await self.chain.ainvoke({
             "title": challenge.title,
-            "description": challenge.description,
             "start_date": challenge.start_date.isoformat(),
             "end_date": challenge.end_date.isoformat(),
-            "screenshot_date": proof_content["screenshot_date"],
-            "image_url": proof_content["image"]
+            "screenshot_date": activity.content["screenshot_date"] or "확인 불가",
+            "image_url": activity.content["image"]
         })

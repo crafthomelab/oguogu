@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, async_scoped_session
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 
 from src.settings import Settings
-from src.database.entity import ChallengeEntity, ChallengeProofEntity
+from src.database.entity import ChallengeEntity, ChallengeActivityEntity
 
 
 logger = logging.getLogger(__name__)
@@ -36,12 +36,12 @@ class SessionManager:
     async def create_database(self) -> None:
         async with self.connect() as conn:
             await conn.run_sync(ChallengeEntity.metadata.create_all)
-            await conn.run_sync(ChallengeProofEntity.metadata.create_all)
+            await conn.run_sync(ChallengeActivityEntity.metadata.create_all)
 
     async def drop_database(self) -> None:
         async with self.connect() as conn:
             await conn.run_sync(ChallengeEntity.metadata.drop_all)
-            await conn.run_sync(ChallengeProofEntity.metadata.drop_all)
+            await conn.run_sync(ChallengeActivityEntity.metadata.drop_all)
 
 
     @asynccontextmanager
