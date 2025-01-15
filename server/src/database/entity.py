@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncAttrs
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import relationship, backref
 
-from src.domains import Challenge, ChallengeActivity, ChallengeStatus
+from src.domains import Challenge, ChallengeActivity, ChallengeStatus, ChallengeType
 
 class Base(AsyncAttrs, DeclarativeBase):
     pass
@@ -49,7 +49,7 @@ class ChallengeEntity(Base):
             challenger_address=domain.challenger_address,
             reward_amount=domain.reward_amount,
             title=domain.title,
-            type=domain.type,
+            type=domain.type.name,
             start_date=domain.start_date,
             end_date=domain.end_date,
             minimum_activity_count=domain.minimum_activity_count,
@@ -67,7 +67,7 @@ class ChallengeEntity(Base):
             challenger_address=self.challenger_address,
             reward_amount=self.reward_amount,
             title=self.title,
-            type=self.type,
+            type=ChallengeType[self.type],
             start_date=self.start_date,
             end_date=self.end_date,
             minimum_activity_count=self.minimum_activity_count,

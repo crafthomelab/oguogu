@@ -11,6 +11,11 @@ from enum import Enum
 from src.utils import calculate_challenge_hash, create_hash
 
 
+
+class ChallengeType(Enum):
+    photos = 0
+
+
 @dataclass
 class Challenge:
     """ Challenge 도메인 """
@@ -23,7 +28,7 @@ class Challenge:
     reward_amount: Union[int, Decimal]
     
     title: str
-    type: Literal["photos"]
+    type: ChallengeType
     
     start_date: datetime
     end_date: datetime
@@ -41,7 +46,7 @@ class Challenge:
         challenger_address: str,
         reward_amount: int,
         title: str,
-        type: Literal["photos"],
+        type: Union[Literal["photos"], ChallengeType],
         start_date: datetime,
         end_date: datetime,
         minimum_activity_count: int,
@@ -52,8 +57,11 @@ class Challenge:
         if minimum_activity_count <= 0:
             raise ClientException("Minimum activity count must be greater than 0")
         
-        if type != "photos":
-            raise ClientException("Invalid challenge type")
+        if isinstance(type, str):
+            try:
+                type = ChallengeType[type]
+            except KeyError:
+                raise ClientException("Invalid challenge type")
         
         if not Web3.is_address(challenger_address):
             raise ClientException("Invalid challenger address")

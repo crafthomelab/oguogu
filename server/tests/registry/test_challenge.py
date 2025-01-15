@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from eth_account import Account
 import pytest
 import pytz
-from src.domains import Challenge, ChallengeStatus
+from src.domains import Challenge, ChallengeStatus, ChallengeType
 from src.registry.challenge import ChallengeRegistryService
 from src.utils import send_transaction
 from web3 import Web3
@@ -28,7 +28,7 @@ async def test_open_challenge_scenario(
         challenger_address=user0_account.address,
         reward_amount=Web3.to_wei(1, 'ether'),
         title="Test Challenge",
-        type="photos",
+        type=ChallengeType.photos,
         start_date=datetime.now(pytz.utc),
         end_date=datetime.now(pytz.utc) + timedelta(days=1),
         minimum_activity_count=1,
@@ -42,11 +42,13 @@ async def test_open_challenge_scenario(
         web3, 
         user0_account, 
         oguogu_contract.functions.createChallenge(
+            title=given_challenge.title,
             reward=given_challenge.reward_amount,
-            challengeHash=given_challenge.hash,
+            challengeType=given_challenge.type.value,
             challengeSignature=challenge_signature.signature,
             startDate=int(given_challenge.start_date.timestamp()),
             endDate=int(given_challenge.end_date.timestamp()),
+            nonce=given_challenge.nonce,
             minimumActivityCount=given_challenge.minimum_activity_count,
         )
     )

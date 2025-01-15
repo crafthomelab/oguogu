@@ -357,16 +357,7 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
         uint8 minimumActivityCount
     ) public pure returns (bytes32) {
         return keccak256(
-            abi.encodePacked(
-                title,
-                reward,
-                challengeType,
-                challenger,
-                startDate,
-                endDate,
-                nonce,
-                minimumActivityCount
-            )
+            abi.encodePacked(title, reward, challengeType, challenger, startDate, endDate, nonce, minimumActivityCount)
         );
     }
 }

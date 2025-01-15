@@ -21,7 +21,7 @@ def create_hash(**kwargs) -> bytes:
 def calculate_challenge_hash(
     title:str, 
     reward:int, 
-    challenge_type: Literal["photos"], 
+    challenge_type: 'ChallengeType', 
     challenger:Union[str, ChecksumAddress], 
     start_date:datetime, 
     end_date:datetime, 
@@ -31,15 +31,10 @@ def calculate_challenge_hash(
     # Web3.py를 사용하여 이더리움 주소를 체크섬 주소로 변환
     challenger = Web3.to_checksum_address(challenger)
     
-    if challenge_type == 'photos':
-        challenge_type = 0
-    else:
-        raise ClientException("Invalid challenge type")
-    
     # abi.encodePacked와 동일한 방식으로 데이터를 인코딩
     encoded_data = encode_packed(
         ['string', 'uint256', 'uint8', 'address', 'uint256', 'uint256', 'uint32', 'uint8'],
-        [title, reward, challenge_type, challenger, int(start_date.timestamp()), int(end_date.timestamp()), nonce, minimum_activity_count]
+        [title, reward, challenge_type.value, challenger, int(start_date.timestamp()), int(end_date.timestamp()), nonce, minimum_activity_count]
     )
     
     # keccak256 해시 생성
