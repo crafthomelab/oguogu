@@ -1,5 +1,5 @@
 from typing import Dict
-from src.domains import Challenge, ChallengeActivity
+from src.domains import Challenge, ChallengeActivity, ChallengeType
 from src.settings import Settings
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
@@ -81,7 +81,7 @@ class ActivityGrader:
         challenge: Challenge,
         content: Dict[str, any],
     ) -> ActivityGraderResponse:
-        if challenge.type == "photos":
+        if challenge.type == ChallengeType.photos:
             return await self.grade_photos_activity(challenge, content)
         else:   
             raise ValueError(f"Unsupported activity type: {challenge.type}"  )

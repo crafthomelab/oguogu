@@ -1,4 +1,5 @@
-from typing import Dict, Optional
+from contextlib import asynccontextmanager
+from typing import AsyncIterator, Dict, Optional
 from src.database.repository import ChallengeRepository
 from src.domains import Challenge, ChallengeActivity
 from src.exceptions import ClientException
@@ -37,8 +38,10 @@ class ActivityRegistryService:
     async def find_activity(self, challenge_hash: str, activity_hash: str) -> Optional[ChallengeActivity]:
         return await self.repository.find_activity(challenge_hash, activity_hash)
     
-    async def stream_activity_image(self, challenge_hash: str, activity_hash: str) -> StreamingBody:
-        return await self.storage.astream_by_id(f"{challenge_hash}/{activity_hash}")
+    @asynccontextmanager
+    async def astream_activity_image(self, challenge_hash: str, activity_hash: str) -> AsyncIterator[StreamingBody]:
+        async with self.storage.astream_by_id(f"{challenge_hash}/{activity_hash}") as stream:
+            yield stream
                 
     async def register_activity(self, challenge: Challenge, content: Dict[str, any]) -> str:
         """ 챌린지 수행 증명을 검증 후 등록합니다. """
@@ -50,9 +53,11 @@ class ActivityRegistryService:
         if not response.is_correct:
             raise ClientException(message=response.message)
         
-        await self.storage.asave('oguogu', 
-                                 content['image'], content['content_type'])
         activity = ChallengeActivity.new(content)
+        await self.storage.asave(f"{challenge.hash}/{activity.activity_hash}", 
+                                 content['image_bytes'], 
+                                 content['content_type'])
+        
         await self.repository.add_activity(challenge.hash, activity)
         
         return response.message

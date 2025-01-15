@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import AsyncIterator, Optional
 from src.settings import Settings
 import aioboto3
 from types_aiobotocore_s3.client import S3Client
@@ -20,16 +20,17 @@ class ObjectRepository:
             await client.create_bucket(Bucket=self.bucket_name)
             
 
-    async def astream_by_id(self, key: str) -> StreamingBody:
+    @asynccontextmanager
+    async def astream_by_id(self, key: str) -> AsyncIterator[StreamingBody]:
         async with self.client() as client: 
             client: S3Client
             response = await client.get_object(Bucket=self.bucket_name, Key=key)
-            return response['Body']
+            yield response['Body']
         
     async def asave(
         self, 
-        content: bytes, 
         key: str, 
+        content: bytes, 
         content_type: Optional[str] = None
     ):
         async with self.client() as client:

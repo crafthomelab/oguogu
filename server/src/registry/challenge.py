@@ -1,7 +1,8 @@
-from typing import List
+from typing import List, Optional
 from eth_typing import ChecksumAddress
 from src.database.repository import ChallengeRepository
 from src.domains import Challenge, ChallengeSignature, ChallengeStatus
+from src.exceptions import ClientException
 from src.registry.transaction import TransactionManager
 from web3 import Web3
 import logging
@@ -41,13 +42,18 @@ class ChallengeRegistryService:
         if challenge is None or challenge.challenger_address != user_address:
             raise Exception(f"Challenge {challenge_hash} not found")
         return challenge
+    
+    async def find_challenge(
+        self, challenge_hash: str
+    ) -> Optional[Challenge]:
+        return await self.repository.get_challenge(challenge_hash)
         
     async def get_challenge(
         self, challenge_hash: str
     ) -> Challenge:
-        challenge = await self.repository.get_challenge(challenge_hash)
+        challenge = await self.find_challenge(challenge_hash)
         if challenge is None:
-            raise Exception(f"Challenge {challenge_hash} not found")
+            raise ClientException(message=f"Challenge {challenge_hash} not found")
         return challenge
     
     async def get_active_challenges(
@@ -68,17 +74,29 @@ class ChallengeRegistryService:
         
     async def sign_new_challenge(
         self, 
-        challenge: Challenge
+        challenge: Challenge,
+        skip_create: bool = False
     ) -> ChallengeSignature:
         """ 새로운 챌린지를 생성하고 서명합니다 """
         logger.info(f"Creating challenge {challenge.hash} for {challenge.challenger_address}")
         
-        await self.repository.create_challenge(challenge)
+        if not skip_create:
+            await self.repository.create_challenge(challenge)
         signature = self.transaction.create_signature(challenge.hash)
         
         return ChallengeSignature(
             challenge_hash=challenge.hash,
-            signature=signature.to_0x_hex()
+            signature=signature.to_0x_hex(),
+            payload={
+                "title": challenge.title,
+                "reward": challenge.reward_amount,
+                "type": challenge.type.value,
+                "challenger": challenge.challenger_address,
+                "startDate": int(challenge.start_date.timestamp()),
+                "endDate": int(challenge.end_date.timestamp()),
+                "nonce": challenge.nonce,
+                "minimumActivityCount": challenge.minimum_activity_count
+            }
         )
     
     async def register_challenge(
