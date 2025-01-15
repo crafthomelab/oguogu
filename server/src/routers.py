@@ -63,7 +63,7 @@ class ChallengeDTO(BaseModel):
             challenger_address=challenge.challenger_address,
             reward_amount=str(int(challenge.reward_amount)),
             title=challenge.title,
-            type=challenge.type,
+            type=challenge.type.name,
             start_date=challenge.start_date,
             end_date=challenge.end_date,
             minimum_activity_count=challenge.minimum_activity_count,
