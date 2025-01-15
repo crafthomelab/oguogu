@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Optional
 from src.database.repository import ChallengeRepository
 from src.domains import Challenge, ChallengeActivity
 from src.exceptions import ClientException
@@ -29,6 +29,9 @@ class ActivityRegistryService:
         self.transaction = transaction
         self.grader = grader
         self.submit_activity_function = transaction.oguogu_contract().functions.submitActivity        
+        
+    async def find_activity(self, challenge_hash: str, activity_hash: str) -> Optional[ChallengeActivity]:
+        return await self.repository.find_activity(challenge_hash, activity_hash)
 
                 
     async def register_activity(self, challenge: Challenge, activity: ChallengeActivity) -> str:
@@ -41,7 +44,9 @@ class ActivityRegistryService:
         if not response.is_correct:
             raise ClientException(message=response.message)
         
+        # TODO: Object Storage에 이미지 저장하기. Database에는 Content 저장 X
         await self.repository.add_activity(challenge.hash, activity)
+        
         return response.message
         
 

@@ -157,6 +157,9 @@ class ChallengeActivity:
             activity_date=None,
         )
         
+    def is_completed(self) -> bool:
+        return self.activity_transaction is not None
+        
     def complete(self, activity_transaction: str, activity_date: datetime):
         self.activity_transaction = activity_transaction
         self.activity_date = activity_date

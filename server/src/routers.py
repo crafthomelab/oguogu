@@ -3,9 +3,11 @@ from typing import Annotated, List, Literal, Optional
 from eth_typing import ChecksumAddress
 from fastapi import APIRouter, Depends, Form, UploadFile
 from dependency_injector.wiring import Provide, inject
+from fastapi.responses import StreamingResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from src.container import AppContainer
 from src.domains import Challenge, ChallengeActivity, ChallengeSignature
+from src.exceptions import ClientException
 from src.registry.challenge import ChallengeRegistryService
 from pydantic import BaseModel, Field
 from src.registry.activity import ActivityRegistryService
@@ -206,11 +208,43 @@ async def register_photo_activity(
 ) -> ActivityHashDTO:
     activity_content = await generate_photo_activity(activity_file)
     
+    if activity := await activity_service.find_activity(challenge_hash, activity_content.activity_hash):
+        if activity.is_completed():
+            raise ClientException(message="이미 제출한 제출물이에요.")
+    
     challenge = await registry.get_challenge(challenge_hash)
     
     activity = ChallengeActivity.new(activity_content)
-    await activity_service.register_activity(challenge, activity)    
-    return ActivityHashDTO(activity_hash=activity_service.activity_hash)
+    await activity_service.register_activity(challenge, activity)
+    
+    return ActivityHashDTO(activity_hash=activity.activity_hash)
+
+
+@router.get("/challenges/{challenge_hash}/photo-activities/{activity_hash}")
+@inject
+async def get_photo_activity(
+    challenge_hash: str,
+    activity_hash: str,
+    user_address: Annotated[ChecksumAddress, Depends(authenticate_by_signature)],
+    registry: ChallengeRegistryService = RegistryDependency,
+    activity_service: ActivityRegistryService = ActivityDependency
+) -> StreamingResponse:
+    challenge = await registry.get_challenge(challenge_hash)
+    
+    if challenge.challenger_address != user_address:
+        raise ClientException(message="접근 권한이 없어요.")
+    
+    activity = await activity_service.find_activity(challenge_hash, activity_hash)
+    
+    if activity is None:
+        raise ClientException(message="존재하지 않은 제출물이에요.")
+    
+    # TODO: Object Storage로부터 이미지 가져오기
+    
+    return StreamingResponse(
+        content=activity.content.get("image"),
+        media_type=activity.content.get("content_type")
+    )
 
 
 @router.post("/challenges/{challenge_hash}/photo-activities/{activity_hash}")
@@ -223,7 +257,6 @@ async def submit_photo_activity(
     activity_service: ActivityRegistryService = ActivityDependency
 ) -> OkResponse:
     challenge = await registry.get_challenge(challenge_hash)
-    
     await activity_service.submit_activity(challenge, activity_hash, activity_signature)
     return OkResponse(ok=True)
 

@@ -101,7 +101,7 @@ class ChallengeRepository:
             await session.commit()
             
             
-    async def get_activity(self, challenge_hash: str, activity_hash: str) -> ChallengeActivity:
+    async def find_activity(self, challenge_hash: str, activity_hash: str) -> Optional[ChallengeActivity]:
         """ 챌린지 증명 조회하기 """
         async with self.session_factory() as session:
             stmt = select(ChallengeActivityEntity).where(
@@ -112,7 +112,14 @@ class ChallengeRepository:
             activity_entity = result.scalar_one_or_none()
             if activity_entity:
                 return activity_entity.to_domain()
+            return None
+            
+    async def get_activity(self, challenge_hash: str, activity_hash: str) -> ChallengeActivity:
+        """ 챌린지 증명 조회하기 """
+        activity = await self.find_activity(challenge_hash, activity_hash)
+        if activity is None:
             raise ClientException(message="존재하지 않은 제출물이에요.")
+        return activity
             
 
     async def add_activity(self, challenge_hash: str, activity: ChallengeActivity) -> None:

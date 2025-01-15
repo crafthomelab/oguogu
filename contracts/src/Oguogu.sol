@@ -61,7 +61,9 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
     event WithdrawReward(address indexed challenger, uint256 amount);
 
     event ChallengeCreated(uint256 indexed tokenId, address indexed challenger, bytes32 challengeHash);
-    event SubmitActivity(uint256 indexed tokenId, address indexed challenger, bytes32 challengeHash, bytes32 activityHash);
+    event SubmitActivity(
+        uint256 indexed tokenId, address indexed challenger, bytes32 challengeHash, bytes32 activityHash
+    );
 
     event ChallengeCompleted(
         uint256 indexed tokenId, address indexed challenger, ChallengeStatus status, uint256 paymentReward
