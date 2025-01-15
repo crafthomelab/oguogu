@@ -79,19 +79,12 @@ class ActivityDTO(BaseModel):
     """ Activity DTO """
     activity_hash: str = Field(description="Activity Hash")
     activity_date: datetime = Field(description="Activity Date")
-
-    content_type: Optional[str] = Field(description="Content Type")
-    image: Optional[str] = Field(description="base64 encoded JPEG image")
-    screenshot_date: Optional[str] = Field(description="Screenshot Date")
     
     @staticmethod
     def from_domain(activity: ChallengeActivity) -> 'ActivityDTO':
         return ActivityDTO(
             activity_hash=activity.activity_hash,
-            activity_date=activity.activity_date,
-            content_type=activity.content.get("content_type"),
-            image=activity.content.get("image"),
-            screenshot_date=activity.content.get("screenshot_date"),
+            activity_date=activity.activity_date
         )
 
 

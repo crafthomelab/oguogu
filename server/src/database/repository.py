@@ -95,6 +95,8 @@ class ChallengeRepository:
                 .values(
                     status=challenge.status.value,
                     payment_transaction=challenge.payment_transaction,
+                    payment_reward=challenge.payment_reward,
+                    complete_date=challenge.complete_date
                 )
             )
             await session.execute(stmt)

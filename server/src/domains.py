@@ -140,6 +140,9 @@ class Challenge:
         self.payment_reward = payment_reward
         self.complete_date = complete_date
         
+    
+    def is_completed(self) -> bool:
+        return self.status == ChallengeStatus.SUCCESS or self.status == ChallengeStatus.FAILED
 
 
 class ChallengeStatus(Enum):
