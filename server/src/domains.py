@@ -142,7 +142,6 @@ class ChallengeStatus(Enum):
 class ChallengeActivity:
     """ 챌린지 수행 활동 """
     activity_hash: str
-    content: Dict[str, any]
     
     activity_transaction: Optional[str] = None
     activity_date: Optional[datetime] = None
@@ -152,7 +151,6 @@ class ChallengeActivity:
         activity_hash = create_hash(**content)
         return ChallengeActivity(
             activity_hash=activity_hash, 
-            content=content,
             activity_transaction=None,
             activity_date=None,
         )

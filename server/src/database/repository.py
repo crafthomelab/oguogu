@@ -1,7 +1,7 @@
 from contextlib import AbstractContextManager
 from typing import Callable, List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import insert, select, update
+from sqlalchemy import select, update
 from sqlalchemy.orm import selectinload
 
 from src.database.entity import ChallengeEntity, ChallengeActivityEntity

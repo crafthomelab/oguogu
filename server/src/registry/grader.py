@@ -79,23 +79,23 @@ class ActivityGrader:
     async def grade_activity(
         self, 
         challenge: Challenge,
-        activity: ChallengeActivity,
+        content: Dict[str, any],
     ) -> ActivityGraderResponse:
         if challenge.type == "photos":
-            return await self.grade_photos_activity(challenge, activity)
+            return await self.grade_photos_activity(challenge, content)
         else:   
             raise ValueError(f"Unsupported activity type: {challenge.type}"  )
 
     async def grade_photos_activity(
         self, 
         challenge: Challenge,
-        activity: ChallengeActivity,
+        content: Dict[str, any],
     ) -> ActivityGraderResponse:
         logger.info(f"Grading photos activity for challenge {challenge.hash}")
         return await self.chain.ainvoke({
             "title": challenge.title,
             "start_date": challenge.start_date.isoformat(),
             "end_date": challenge.end_date.isoformat(),
-            "screenshot_date": activity.content["screenshot_date"] or "확인 불가",
-            "image_url": activity.content["image"]
+            "screenshot_date": content["screenshot_date"] or "확인 불가",
+            "image_url": content["image"]
         })

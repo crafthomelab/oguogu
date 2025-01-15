@@ -214,9 +214,8 @@ async def register_photo_activity(
     
     challenge = await registry.get_challenge(challenge_hash)
     
+    await activity_service.register_activity(challenge, activity_content)
     activity = ChallengeActivity.new(activity_content)
-    await activity_service.register_activity(challenge, activity)
-    
     return ActivityHashDTO(activity_hash=activity.activity_hash)
 
 
@@ -239,10 +238,9 @@ async def get_photo_activity(
     if activity is None:
         raise ClientException(message="존재하지 않은 제출물이에요.")
     
-    # TODO: Object Storage로부터 이미지 가져오기
-    
+    stream_body = await activity_service.stream_activity_image(challenge_hash, activity_hash)
     return StreamingResponse(
-        content=activity.content.get("image"),
+        content=stream_body,
         media_type=activity.content.get("content_type")
     )
 

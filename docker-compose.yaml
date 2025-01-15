@@ -19,3 +19,14 @@ services:
     ports:
       - 8545:8545
 
+  minio:
+    image: minio/minio:latest
+    container_name: oguogu-minio
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY}
+    ports:
+      - 9000:9000
+      - 9001:9001
+

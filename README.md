@@ -11,7 +11,7 @@
 1. deploy database & Anvil server
 
 ```bash
-docker compose -f docker-compose.local.yaml -f docker-compose.yaml up
+docker compose -f docker-compose.yaml up
 ```
 
 2. Deploy Contract

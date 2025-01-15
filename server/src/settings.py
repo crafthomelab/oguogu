@@ -28,6 +28,26 @@ class Settings(BaseSettings):
         description="디비 패스워드 이름"
     )
     
+    S3_URL: str = Field(
+        default="http://localhost:9000",
+        description="s3 url",
+    )
+    
+    S3_ACCESS_KEY: str = Field(
+        default="admin",
+        description="s3 access key",
+    )
+    
+    S3_SECRET_KEY: str = Field(
+        default="admin123",
+        description="s3 secret key",
+    )
+    
+    S3_BUCKET_NAME: str = Field(
+        default="oguogu",
+        description="s3 bucket name",
+    )
+    
     WEB3_PROVIDER_URL: str = Field(
         default="http://localhost:8545",
         description="web3 provider url",
