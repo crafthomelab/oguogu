@@ -35,7 +35,6 @@ contract DeployScript is Script {
         //         1
         // ));
 
-
         oguogu.createChallenge(
             unicode"영어공부 앱으로 영어하기",
             1e6,
