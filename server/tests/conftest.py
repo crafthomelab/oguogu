@@ -6,7 +6,9 @@ from src.registry.container import RegistryContainer
 from src.registry.grader import ActivityGraderResponse
 from src.registry.activity import ActivityRegistryService
 from src.registry.reward import ChallengeRewardService
+from src.storage.container import StorageContainer
 from src.utils import send_transaction
+from types_aiobotocore_s3 import S3Client
 from web3 import Web3
 from web3.contract import Contract
 import os
@@ -17,6 +19,7 @@ from src.database.database import SessionManager
 from src.database.entity import Base
 from src.settings import Settings
 
+from testcontainers.minio import MinioContainer
 from testcontainers.postgres import PostgresContainer
 from testcontainers.core.container import DockerContainer
 from testcontainers.core.waiting_utils import wait_for_logs
@@ -55,6 +58,11 @@ def postgres_container():
         yield postgres
         
 @pytest.fixture(scope="session")
+def minio_container():
+    with MinioContainer("minio/minio:latest") as minio:
+        yield minio
+        
+@pytest.fixture(scope="session")
 def anvil_container():
     container = DockerContainer("craftsangjae/anvil:latest")
     container.with_exposed_ports(8545)
@@ -65,7 +73,6 @@ def anvil_container():
         yield container
     finally:
         container.stop()
-
 
 @pytest.fixture(scope="session")
 def web3(anvil_container: DockerContainer):
@@ -159,6 +166,7 @@ def oguogu_contract(
 def local_settings(
     postgres_container: PostgresContainer, 
     anvil_container: DockerContainer,
+    minio_container: MinioContainer,
     oguogu_operator_private_key: str,
     oguogu_contract: Contract
 ):
@@ -171,6 +179,9 @@ def local_settings(
         WEB3_PROVIDER_URL=f"http://{anvil_container.get_container_host_ip()}:{anvil_container.get_exposed_port(8545)}",
         OPERATOR_PRIVATE_KEY=oguogu_operator_private_key,
         OGUOGU_ADDRESS=oguogu_contract.address,
+        S3_URL=f"http://{minio_container.get_container_host_ip()}:{minio_container.get_exposed_port(9000)}",
+        S3_ACCESS_KEY=minio_container.access_key,
+        S3_SECRET_KEY=minio_container.secret_key,
     )
 
 
@@ -193,11 +204,27 @@ async def local_database_container(local_settings: Settings, create_table_on_loc
     container = DataBaseContainer(settings=local_settings)
     yield container
     
+    
 @pytest.fixture(scope='session')
-async def local_registry_container(local_settings: Settings, local_database_container: DataBaseContainer):
+async def local_storage_container(local_settings: Settings, minio_container: MinioContainer):
+    container = StorageContainer(
+        settings=local_settings,
+    )
+    async with container.repository().client() as client:
+            client: S3Client
+            await client.create_bucket(Bucket=local_settings.S3_BUCKET_NAME)    
+    yield container    
+    
+@pytest.fixture(scope='session')
+async def local_registry_container(
+    local_settings: Settings, 
+    local_database_container: DataBaseContainer,
+    local_storage_container: StorageContainer,
+):
     container = RegistryContainer(
         settings=local_settings,
-        database=local_database_container
+        database=local_database_container,
+        storage=local_storage_container
     )
     yield container
 

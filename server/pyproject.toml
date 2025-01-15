@@ -28,11 +28,15 @@ langchain = "^0.3.13"
 langchain-openai = "^0.2.14"
 pillow = "^11.0.0"
 python-multipart = "^0.0.20"
+aioboto3 = "^13.3.0"
+types-aiobotocore = {extras = ["essential"], version = "^2.17.0"}
 
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.4"
 testcontainers = "^4.9.0"
+types-aiobotocore = "^2.17.0"
+minio = "^7.2.14"
 
 [build-system]
 requires = ["poetry-core"]

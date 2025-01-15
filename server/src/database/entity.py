@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import List
-from sqlalchemy import DateTime, Numeric, PrimaryKeyConstraint, String, Integer, JSON, ForeignKey
+from sqlalchemy import DateTime, Numeric, PrimaryKeyConstraint, String, Integer, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.ext.asyncio import AsyncAttrs
 from sqlalchemy.orm import DeclarativeBase
@@ -83,7 +83,6 @@ class ChallengeActivityEntity(Base):
 
     activity_hash: Mapped[str] = mapped_column(String)
     challenge_hash: Mapped[str] = mapped_column(String, ForeignKey("challenges.hash"))
-    content: Mapped[dict] = mapped_column(JSON)
     
     activity_transaction: Mapped[str] = mapped_column(String, nullable=True)
     activity_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
@@ -97,7 +96,6 @@ class ChallengeActivityEntity(Base):
         return ChallengeActivityEntity(
             challenge_hash=challenge_hash,
             activity_hash=domain.activity_hash,
-            content=domain.content,
             activity_transaction=domain.activity_transaction,
             activity_date=domain.activity_date,
         )
@@ -105,7 +103,6 @@ class ChallengeActivityEntity(Base):
     def to_domain(self) -> ChallengeActivity:
         return ChallengeActivity(
             activity_hash=self.activity_hash,
-            content=self.content,
             activity_transaction=self.activity_transaction,
             activity_date=self.activity_date,
         )
