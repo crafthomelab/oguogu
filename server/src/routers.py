@@ -205,9 +205,9 @@ async def register_challenge(
     return OkResponse(ok=True)
 
 
-@router.post("/challenges/{challenge_hash}/photo-activities", operation_id="register_photo_activity")
+@router.post("/challenges/{challenge_hash}/photo-activities", operation_id="create_photo_activity")
 @inject
-async def register_photo_activity(
+async def create_photo_activity(
     challenge_hash: str,
     activity_file: UploadFile,
     registry: ChallengeRegistryService = RegistryDependency,
@@ -252,7 +252,6 @@ async def get_photo_activity(
     
     async def s3_stream():
         async with activity_service.astream_activity_image(challenge_hash, activity_hash) as s3_stream:
-            # aioboto3의 StreamingBody는 async for chunk in ... 으로 반복 가능
             async for chunk in s3_stream.iter_chunks(chunk_size=1024 * 128):
                 yield chunk    
     
@@ -263,9 +262,9 @@ async def get_photo_activity(
     )
 
 
-@router.post("/challenges/{challenge_hash}/photo-activities/{activity_hash}", operation_id="submit_photo_activity")
+@router.post("/challenges/{challenge_hash}/photo-activities/{activity_hash}/register", operation_id="register_photo_activity")
 @inject
-async def submit_photo_activity(
+async def register_photo_activity(
     challenge_hash: str,
     activity_hash: str,
     activity_signature: str = Form(..., description="Activity Signature"),
