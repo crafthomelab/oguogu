@@ -24,7 +24,7 @@ def calculate_challenge_hash(
     challenge_type: 'ChallengeType', 
     challenger:Union[str, ChecksumAddress], 
     start_date:datetime, 
-    end_date:datetime, 
+    end_date:datetime,  
     nonce:int, 
     minimum_activity_count:int
 ):
@@ -33,7 +33,7 @@ def calculate_challenge_hash(
     
     # abi.encodePacked와 동일한 방식으로 데이터를 인코딩
     encoded_data = encode_packed(
-        ['string', 'uint256', 'uint8', 'address', 'uint256', 'uint256', 'uint32', 'uint8'],
+        ['string', 'uint128', 'uint8', 'address', 'uint64', 'uint64', 'uint32', 'uint8'],
         [title, reward, challenge_type.value, challenger, int(start_date.timestamp()), int(end_date.timestamp()), nonce, minimum_activity_count]
     )
     

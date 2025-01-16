@@ -19,7 +19,7 @@ contract OGUOGUTest is Test {
     function setUp() public {
         testUSDT = new TestUSDT();
         oguogu = new OGUOGU();
-        oguogu.initialize(address(testUSDT), operator);
+        oguogu.initialize(address(testUSDT), operator, "");
 
         testUSDT.mint(user0, 10000e6);
         testUSDT.mint(operator, 100e6);
@@ -27,7 +27,7 @@ contract OGUOGUTest is Test {
         vm.warp(1735657200); // 2025-01-01 00:00:00
     }
 
-    function depositReward(address owner, address user, uint256 amount) public {
+    function depositReward(address owner, address user, uint128 amount) public {
         vm.startPrank(owner);
         testUSDT.approve(address(oguogu), amount);
         oguogu.depositReward(address(user), amount);
@@ -54,7 +54,14 @@ contract OGUOGUTest is Test {
 
         vm.startPrank(user0);
         bytes32 chHash = oguogu.calculateChallengeHash(
-            "challenge", 10e6, OGUOGU.ChallengeType.PHOTOS, user0, block.timestamp, block.timestamp + 1 days, 1, 10
+            "challenge",
+            10e6,
+            OGUOGU.ChallengeType.PHOTOS,
+            user0,
+            uint64(block.timestamp),
+            uint64(block.timestamp + 1 days),
+            1,
+            10
         );
         bytes memory challengeSignature = generateSignature(0x1, chHash);
         uint256 challengeId = oguogu.createChallenge(
@@ -62,8 +69,8 @@ contract OGUOGUTest is Test {
             10e6,
             OGUOGU.ChallengeType.PHOTOS,
             challengeSignature,
-            block.timestamp,
-            block.timestamp + 1 days,
+            uint64(block.timestamp),
+            uint64(block.timestamp + 1 days),
             1,
             10
         );
@@ -99,7 +106,14 @@ contract OGUOGUTest is Test {
 
         vm.startPrank(user0);
         bytes32 chHash = oguogu.calculateChallengeHash(
-            "challenge", 10e6, OGUOGU.ChallengeType.PHOTOS, user0, block.timestamp, block.timestamp + 1 days, 1, 10
+            "challenge",
+            10e6,
+            OGUOGU.ChallengeType.PHOTOS,
+            user0,
+            uint64(block.timestamp),
+            uint64(block.timestamp + 1 days),
+            1,
+            10
         );
         bytes memory challengeSignature = generateSignature(0x1, chHash);
 
@@ -108,8 +122,8 @@ contract OGUOGUTest is Test {
             10e6,
             OGUOGU.ChallengeType.PHOTOS,
             challengeSignature,
-            block.timestamp,
-            block.timestamp + 1 days,
+            uint64(block.timestamp),
+            uint64(block.timestamp + 1 days),
             1,
             10
         );
@@ -119,8 +133,8 @@ contract OGUOGUTest is Test {
             10e6,
             OGUOGU.ChallengeType.PHOTOS,
             challengeSignature,
-            block.timestamp,
-            block.timestamp + 1 days,
+            uint64(block.timestamp),
+            uint64(block.timestamp + 1 days),
             1,
             10
         );
@@ -134,8 +148,8 @@ contract OGUOGUTest is Test {
             10e6,
             OGUOGU.ChallengeType.PHOTOS,
             user0,
-            block.timestamp - 2 days,
-            block.timestamp - 1 days,
+            uint64(block.timestamp - 2 days),
+            uint64(block.timestamp - 1 days),
             1,
             10
         );
@@ -146,8 +160,8 @@ contract OGUOGUTest is Test {
             10e6,
             OGUOGU.ChallengeType.PHOTOS,
             challengeSignature,
-            block.timestamp - 2 days,
-            block.timestamp - 1 days,
+            uint64(block.timestamp - 2 days),
+            uint64(block.timestamp - 1 days),
             1,
             10
         );
@@ -158,7 +172,14 @@ contract OGUOGUTest is Test {
 
         vm.startPrank(user0);
         bytes32 chHash = oguogu.calculateChallengeHash(
-            "challenge", 10e6, OGUOGU.ChallengeType.PHOTOS, user0, block.timestamp, block.timestamp + 1 days, 1, 10
+            "challenge",
+            10e6,
+            OGUOGU.ChallengeType.PHOTOS,
+            user0,
+            uint64(block.timestamp),
+            uint64(block.timestamp + 1 days),
+            1,
+            10
         );
         bytes memory challengeSignature = generateSignature(0x1, chHash);
         oguogu.createChallenge(
@@ -166,8 +187,8 @@ contract OGUOGUTest is Test {
             10e6,
             OGUOGU.ChallengeType.PHOTOS,
             challengeSignature,
-            block.timestamp,
-            block.timestamp + 1 days,
+            uint64(block.timestamp),
+            uint64(block.timestamp + 1 days),
             1,
             10
         );
@@ -188,7 +209,14 @@ contract OGUOGUTest is Test {
 
         vm.startPrank(user0);
         bytes32 chHash = oguogu.calculateChallengeHash(
-            "challenge", 10e6, OGUOGU.ChallengeType.PHOTOS, user0, block.timestamp, block.timestamp + 1 days, 1, 10
+            "challenge",
+            10e6,
+            OGUOGU.ChallengeType.PHOTOS,
+            user0,
+            uint64(block.timestamp),
+            uint64(block.timestamp + 1 days),
+            1,
+            10
         );
         bytes memory challengeSignature = generateSignature(0x1, chHash);
         uint256 challengeId = oguogu.createChallenge(
@@ -196,8 +224,8 @@ contract OGUOGUTest is Test {
             10e6,
             OGUOGU.ChallengeType.PHOTOS,
             challengeSignature,
-            block.timestamp,
-            block.timestamp + 1 days,
+            uint64(block.timestamp),
+            uint64(block.timestamp + 1 days),
             1,
             10
         );
@@ -219,7 +247,14 @@ contract OGUOGUTest is Test {
 
         vm.startPrank(user0);
         bytes32 chHash = oguogu.calculateChallengeHash(
-            "challenge", 10e6, OGUOGU.ChallengeType.PHOTOS, user0, block.timestamp, block.timestamp + 1 days, 1, 10
+            "challenge",
+            10e6,
+            OGUOGU.ChallengeType.PHOTOS,
+            user0,
+            uint64(block.timestamp),
+            uint64(block.timestamp + 1 days),
+            1,
+            10
         );
         bytes memory challengeSignature = generateSignature(0x1, chHash);
         uint256 challengeId = oguogu.createChallenge(
@@ -227,8 +262,8 @@ contract OGUOGUTest is Test {
             10e6,
             OGUOGU.ChallengeType.PHOTOS,
             challengeSignature,
-            block.timestamp,
-            block.timestamp + 1 days,
+            uint64(block.timestamp),
+            uint64(block.timestamp + 1 days),
             1,
             10
         );
@@ -251,7 +286,14 @@ contract OGUOGUTest is Test {
 
         vm.startPrank(user0);
         bytes32 chHash = oguogu.calculateChallengeHash(
-            "challenge", 10e6, OGUOGU.ChallengeType.PHOTOS, user0, block.timestamp, block.timestamp + 1 days, 1, 1
+            "challenge",
+            10e6,
+            OGUOGU.ChallengeType.PHOTOS,
+            user0,
+            uint64(block.timestamp),
+            uint64(block.timestamp + 1 days),
+            1,
+            1
         );
         bytes memory challengeSignature = generateSignature(0x1, chHash);
         uint256 challengeId = oguogu.createChallenge(
@@ -259,8 +301,8 @@ contract OGUOGUTest is Test {
             10e6,
             OGUOGU.ChallengeType.PHOTOS,
             challengeSignature,
-            block.timestamp,
-            block.timestamp + 1 days,
+            uint64(block.timestamp),
+            uint64(block.timestamp + 1 days),
             1,
             1
         );
@@ -287,7 +329,14 @@ contract OGUOGUTest is Test {
 
         vm.startPrank(user0);
         bytes32 chHash = oguogu.calculateChallengeHash(
-            "challenge", 10e6, OGUOGU.ChallengeType.PHOTOS, user0, block.timestamp, block.timestamp + 1 days, 1, 1
+            "challenge",
+            10e6,
+            OGUOGU.ChallengeType.PHOTOS,
+            user0,
+            uint64(block.timestamp),
+            uint64(block.timestamp + 1 days),
+            1,
+            1
         );
         bytes memory challengeSignature = generateSignature(0x1, chHash);
         uint256 challengeId = oguogu.createChallenge(
@@ -295,8 +344,8 @@ contract OGUOGUTest is Test {
             10e6,
             OGUOGU.ChallengeType.PHOTOS,
             challengeSignature,
-            block.timestamp,
-            block.timestamp + 1 days,
+            uint64(block.timestamp),
+            uint64(block.timestamp + 1 days),
             1,
             1
         );

@@ -27,7 +27,12 @@ contract DeployScript is Script {
         testUSDT.mint(deployer, 10000e6);
         testUSDT.mint(user, 10000e6);
 
-        bytes memory data = abi.encodeWithSignature("initialize(address,address)", address(testUSDT), address(deployer));
+        bytes memory data = abi.encodeWithSignature(
+            "initialize(address,address,string)",
+            address(testUSDT),
+            address(deployer),
+            "https://assets.oguogu.me/challenges/"
+        );
         ERC1967Proxy proxy = new ERC1967Proxy(address(oguogu), data);
         oguogu = OGUOGU(address(proxy));
 

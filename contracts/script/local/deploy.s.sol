@@ -24,7 +24,12 @@ contract DeployScript is Script {
 
         oguogu = new OGUOGU();
 
-        bytes memory data = abi.encodeWithSignature("initialize(address,address)", address(testUSDT), address(deployer));
+        bytes memory data = abi.encodeWithSignature(
+            "initialize(address,address,string)",
+            address(testUSDT),
+            address(deployer),
+            "https://assets.oguogu.me/challenges/"
+        );
         ERC1967Proxy proxy = new ERC1967Proxy(address(oguogu), data);
         multicall3 = new Multicall3();
 

@@ -32,11 +32,16 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
 
     IERC20 public rewardToken;
     uint256 private _challengeId;
+    string private _url;
 
-    mapping(address => uint256) private _userReserves;
-    mapping(address => uint256) private _userAllocatedRewards;
-    mapping(address => uint256) private _withdrawableUnlockTime;
-    mapping(address => uint256) private _userAccumulatedReserves;
+    struct UserBalance {
+        uint128 reserve;
+        uint128 allocatedRewards;
+        uint128 accumulatedReserves;
+        uint64 withdrawableUnlockTime;
+    }
+
+    mapping(address => UserBalance) private _userBalances;
 
     mapping(uint256 => Challenge) private _challenges;
     mapping(bytes32 => address) private _challengeHashes;
@@ -49,9 +54,9 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
     struct Challenge {
         bytes32 challengeHash; // challenge hash
         bytes32[] activityHashes; // activity hashes
-        uint256 reward; // reward amount
-        uint256 startDate; // challenge start date
-        uint256 endDate; // challenge end date
+        uint128 reward; // reward amount
+        uint64 startDate; // challenge start date
+        uint64 endDate; // challenge end date
         ChallengeType challengeType; // challenge type
         uint32 nonce; // nonce
         uint8 minimumActivityCount; // minimum activity count
@@ -64,8 +69,8 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
         FAILED
     }
 
-    event DepositReward(address indexed challenger, uint256 amount);
-    event WithdrawReward(address indexed challenger, uint256 amount);
+    event DepositReward(address indexed challenger, uint128 amount);
+    event WithdrawReward(address indexed challenger, uint128 amount);
 
     event ChallengeCreated(uint256 indexed tokenId, address indexed challenger, bytes32 challengeHash);
     event SubmitActivity(
@@ -73,10 +78,10 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
     );
 
     event ChallengeCompleted(
-        uint256 indexed tokenId, address indexed challenger, ChallengeStatus status, uint256 paymentReward
+        uint256 indexed tokenId, address indexed challenger, ChallengeStatus status, uint128 paymentReward
     );
 
-    function initialize(address _rewardToken, address _operator) public initializer {
+    function initialize(address _rewardToken, address _operator, string memory _baseURI) public initializer {
         /**
          * @param _rewardToken The address of the reward token.
          * @param _operator The address of the challenge creator or owner, who has the authority to submit activities.
@@ -86,16 +91,17 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
 
         rewardToken = IERC20(_rewardToken);
         _challengeId = 1;
+        _url = _baseURI;
 
         __Ownable_init(_operator);
         __ERC721_init("OGUOGU", "OGUOGU");
     }
 
-    function _baseURI() internal pure override returns (string memory) {
-        return "https://assets.oguogu.me/challenges/";
+    function _baseURI() internal view override returns (string memory) {
+        return _url;
     }
 
-    function depositReward(address challenger, uint256 amount) external {
+    function depositReward(address challenger, uint128 amount) external {
         /**
          * @notice Deposits reward tokens.
          *
@@ -114,13 +120,14 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
         require(amount > 0, "Invalid amount");
         require(rewardToken.transferFrom(msg.sender, address(this), amount), "Transfer failed");
 
-        unchecked {
-            _userReserves[challenger] += amount;
-            _userAccumulatedReserves[challenger] += amount;
-            if (challenger == msg.sender) {
-                _withdrawableUnlockTime[challenger] = block.timestamp + 28 days;
-            }
+        UserBalance storage userBalance = _userBalances[challenger];
+
+        userBalance.reserve += amount;
+        userBalance.accumulatedReserves += amount;
+        if (challenger == msg.sender) {
+            userBalance.withdrawableUnlockTime = uint64(block.timestamp + 28 days);
         }
+
         emit DepositReward(challenger, amount);
     }
 
@@ -137,11 +144,13 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
         address challenger = msg.sender;
 
         require(receiver != address(0), "Invalid receiver address");
-        uint256 amount = _userReserves[challenger] - _userAllocatedRewards[challenger];
-        require(amount > 0, "Invalid amount");
-        require(_withdrawableUnlockTime[challenger] <= block.timestamp, "Withdrawal not yet available");
 
-        _userReserves[challenger] -= amount;
+        UserBalance storage userBalance = _userBalances[challenger];
+        uint128 amount = userBalance.reserve - userBalance.allocatedRewards;
+        require(amount > 0, "Invalid amount");
+        require(userBalance.withdrawableUnlockTime <= block.timestamp, "Withdrawal not yet available");
+
+        userBalance.reserve -= amount;
         rewardToken.transfer(receiver, amount);
 
         emit WithdrawReward(challenger, amount);
@@ -149,11 +158,11 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
 
     function createChallenge(
         string memory title,
-        uint256 reward,
+        uint128 reward,
         ChallengeType challengeType,
         bytes memory challengeSignature,
-        uint256 startDate,
-        uint256 endDate,
+        uint64 startDate,
+        uint64 endDate,
         uint32 nonce,
         uint8 minimumActivityCount
     ) external returns (uint256) {
@@ -181,10 +190,9 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
 
         _challengeHashes[challengeHash] = msg.sender;
 
-        unchecked {
-            _userAllocatedRewards[msg.sender] += reward;
-            require(_userAllocatedRewards[msg.sender] <= _userReserves[msg.sender], "Insufficient balance");
-        }
+        UserBalance storage userBalance = _userBalances[msg.sender];
+        userBalance.allocatedRewards += reward;
+        require(userBalance.allocatedRewards <= userBalance.reserve, "Insufficient balance");
 
         _challenges[_challengeId] = Challenge(
             challengeHash,
@@ -252,16 +260,17 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
         require(!challenge.isClosed, "Challenge is already closed");
 
         _challenges[tokenId].isClosed = true;
-        _userAllocatedRewards[challenger] -= challenge.reward;
+        UserBalance storage userBalance = _userBalances[challenger];
+        userBalance.allocatedRewards -= uint128(challenge.reward);
 
-        uint256 paymentReward = 0;
+        uint128 paymentReward = 0;
         if (status == ChallengeStatus.SUCCESS) {
             paymentReward = pickPaymentReward(challenge.reward);
             rewardToken.transfer(receipent, paymentReward);
 
-            _userReserves[challenger] -= paymentReward;
+            userBalance.reserve -= uint128(paymentReward);
         } else {
-            _withdrawableUnlockTime[challenger] += 7 days;
+            userBalance.withdrawableUnlockTime += 7 days;
         }
 
         emit ChallengeCompleted(tokenId, challenger, status, paymentReward);
@@ -312,30 +321,28 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
         return signedHash.recover(signature) == _signer;
     }
 
-    function pickPaymentReward(uint256 reward) private view returns (uint256) {
+    function pickPaymentReward(uint128 reward) private view returns (uint128) {
         return reward * pickRandomValue() / 100;
     }
 
-    function pickRandomValue() private view returns (uint256) {
+    function pickRandomValue() private view returns (uint128) {
         /**
          * Generates a random value using blockhash and block.coinbase.
          * This is to reduce the possibility of manipulation by the operator.
          */
-        unchecked {
-            return uint256(keccak256(abi.encodePacked(blockhash(block.number - 1), block.coinbase))) % 100;
-        }
+        return uint128(uint256(keccak256(abi.encodePacked(blockhash(block.number - 1), block.coinbase))) % 100);
     }
 
     function userReserves(address challenger) external view returns (uint256) {
-        return _userReserves[challenger];
+        return _userBalances[challenger].reserve;
     }
 
     function userAllocatedRewards(address challenger) external view returns (uint256) {
-        return _userAllocatedRewards[challenger];
+        return _userBalances[challenger].allocatedRewards;
     }
 
     function withdrawableUnlockTime(address challenger) external view returns (uint256) {
-        return _withdrawableUnlockTime[challenger];
+        return _userBalances[challenger].withdrawableUnlockTime;
     }
 
     function challengeHashes(bytes32 challengeHash) external view returns (address) {
@@ -343,16 +350,16 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
     }
 
     function userAccumulatedReserves(address challenger) external view returns (uint256) {
-        return _userAccumulatedReserves[challenger];
+        return _userBalances[challenger].accumulatedReserves;
     }
 
     function calculateChallengeHash(
         string memory title,
-        uint256 reward,
+        uint128 reward,
         ChallengeType challengeType,
         address challenger,
-        uint256 startDate,
-        uint256 endDate,
+        uint64 startDate,
+        uint64 endDate,
         uint32 nonce,
         uint8 minimumActivityCount
     ) public pure returns (bytes32) {
