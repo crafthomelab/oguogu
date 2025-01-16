@@ -20,7 +20,9 @@ contract DeployScript is Script {
         oguogu = new OGUOGU();
 
         // 초기화 데이터 준비
-        bytes memory data = abi.encodeWithSignature("initialize(address,address)", usdt, address(deployer));
+        bytes memory data = abi.encodeWithSignature(
+            "initialize(address,address,string)", usdt, address(deployer), "https://assets.oguogu.me/challenges/"
+        );
 
         ERC1967Proxy proxy = new ERC1967Proxy(address(oguogu), data);
         oguogu = OGUOGU(address(proxy));
