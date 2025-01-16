@@ -156,7 +156,8 @@ def oguogu_contract(
     deployed_contract = web3.eth.contract(address=contract_address, abi=abi['abi'])
     initialize_txn = deployed_contract.functions.initialize(
         _rewardToken=test_usdt_contract.address,
-        _operator=oguogu_operator.address
+        _operator=oguogu_operator.address,
+        _baseURI="https://assets.oguogu.me/challenges/"
     )
     send_transaction(web3, oguogu_operator, initialize_txn)
     return deployed_contract

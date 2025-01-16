@@ -355,7 +355,7 @@ contract OGUOGU is OwnableUpgradeable, ERC721Upgradeable, IERC4906 {
 
     function calculateChallengeHash(
         string memory title,
-        uint256 reward,
+        uint128 reward,
         ChallengeType challengeType,
         address challenger,
         uint64 startDate,
